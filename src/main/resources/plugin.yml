@@ -13,6 +13,15 @@ permissions:
   inventorywizard.chest:
     description: Allows sorting chests
     default: true
+  inventorywizard.shulker:
+    description: Allows sorting shulker boxes
+    default: true
+  inventorywizard.barrel:
+    description: Allows sorting barrels
+    default: true
+  inventorywizard.enderchest:
+    description: Allows sorting ender chests
+    default: true
   inventorywizard.inventory:
     description: Allows sorting player inventory
     default: true

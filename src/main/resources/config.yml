@@ -17,6 +17,9 @@ settings:
 # Enable/disable magical features
 features:
   chest-sorting: true
+  shulker-sorting: true
+  barrel-sorting: true
+  enderchest-sorting: true
   inventory-sorting: true
   hotbar-sorting: true
   

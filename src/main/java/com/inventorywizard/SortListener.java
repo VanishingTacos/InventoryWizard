@@ -100,9 +100,8 @@ public class SortListener implements Listener {
             // Cancel the event to prevent normal shift-right-click behavior
             event.setCancelled(true);
             
-            // Check if it's a chest inventory
-            if (clickedInventory.getType() == InventoryType.CHEST && 
-                player.hasPermission("inventorywizard.chest")) {
+            // Check if it's a sortable container (chest, shulker box, barrel, or ender chest)
+            if (canSortContainer(clickedInventory, player)) {
                 
                 // Check rate limiting first
                 if (!plugin.getRateLimiter().canSort(player)) {
@@ -126,7 +125,8 @@ public class SortListener implements Listener {
                 }
                 
                 player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 0.5f, 1.2f);
-                player.sendMessage("§a✨ Chest magically sorted! (" + mode.getDisplayName() + ")");
+                String containerType = getContainerDisplayName(clickedInventory.getType());
+                player.sendMessage("§a✨ " + containerType + " magically sorted! (" + mode.getDisplayName() + ")");
                 
             } 
             // Check if it's player inventory (main inventory slots, excluding hotbar)
@@ -202,5 +202,35 @@ public class SortListener implements Listener {
         }
         
 
+    }
+
+    private boolean canSortContainer(Inventory inventory, Player player) {
+        InventoryType type = inventory.getType();
+        switch (type) {
+            case CHEST:
+                return plugin.getConfig().getBoolean("features.chest-sorting", true) && 
+                       player.hasPermission("inventorywizard.chest");
+            case SHULKER_BOX:
+                return plugin.getConfig().getBoolean("features.shulker-sorting", true) && 
+                       player.hasPermission("inventorywizard.shulker");
+            case BARREL:
+                return plugin.getConfig().getBoolean("features.barrel-sorting", true) && 
+                       player.hasPermission("inventorywizard.barrel");
+            case ENDER_CHEST:
+                return plugin.getConfig().getBoolean("features.enderchest-sorting", true) && 
+                       player.hasPermission("inventorywizard.enderchest");
+            default:
+                return false;
+        }
+    }
+
+    private String getContainerDisplayName(InventoryType type) {
+        switch (type) {
+            case CHEST: return "Chest";
+            case SHULKER_BOX: return "Shulker Box";
+            case BARREL: return "Barrel";
+            case ENDER_CHEST: return "Ender Chest";
+            default: return "Container";
+        }
     }
 }
