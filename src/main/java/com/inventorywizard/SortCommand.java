@@ -49,7 +49,7 @@ public class SortCommand implements CommandExecutor, TabCompleter {
                 }
                 
                 long startTime = System.currentTimeMillis();
-                PlayerSortPreferences.SortMode mode = plugin.getPlayerPreferences().getPlayerSortMode(player);
+                PlayerDataManager.SortMode mode = plugin.getPlayerDataManager().getPlayerSortMode(player);
                 InventorySorter.sortHotbar(player, mode);
                 
                 // Record the sort operation
@@ -81,7 +81,7 @@ public class SortCommand implements CommandExecutor, TabCompleter {
                 }
                 
                 long invStartTime = System.currentTimeMillis();
-                PlayerSortPreferences.SortMode invMode = plugin.getPlayerPreferences().getPlayerSortMode(player);
+                PlayerDataManager.SortMode invMode = plugin.getPlayerDataManager().getPlayerSortMode(player);
                 InventorySorter.sortPlayerInventory(player, invMode);
                 
                 // Record the sort operation
@@ -113,7 +113,7 @@ public class SortCommand implements CommandExecutor, TabCompleter {
                 }
                 
                 long allStartTime = System.currentTimeMillis();
-                PlayerSortPreferences.SortMode allMode = plugin.getPlayerPreferences().getPlayerSortMode(player);
+                PlayerDataManager.SortMode allMode = plugin.getPlayerDataManager().getPlayerSortMode(player);
                 InventorySorter.sortPlayerInventory(player, allMode);
                 InventorySorter.sortHotbar(player, allMode);
                 
@@ -134,7 +134,7 @@ public class SortCommand implements CommandExecutor, TabCompleter {
                     player.sendMessage("§c🧙✨ " + ErrorHandler.getPermissionErrorMessage());
                     return true;
                 }
-                plugin.getPlayerPreferences().regenerateCredentials();
+                plugin.getPlayerDataManager().regenerateCredentials();
                 player.sendMessage("§a🔐 Database credentials regenerated successfully!");
                 player.sendMessage("§7New credentials have been saved to the configuration file.");
                 break;
@@ -160,6 +160,36 @@ public class SortCommand implements CommandExecutor, TabCompleter {
                 player.sendMessage("§a⏰ Rate limiting reset for your account!");
                 break;
                 
+            case "rate-limit-enabled":
+                if (!player.hasPermission("inventorywizard.admin")) {
+                    player.sendMessage("§c🧙✨ " + ErrorHandler.getPermissionErrorMessage());
+                    return true;
+                }
+                if (args.length < 3) {
+                    player.sendMessage("§e🧙✨ Usage: §f/iwiz rate-limit-enabled <playername> <on|off>");
+                    return true;
+                }
+                String targetPlayerName = args[1];
+                String state = args[2].toLowerCase();
+                boolean enableRateLimit = state.equals("on");
+                if (!state.equals("on") && !state.equals("off")) {
+                    player.sendMessage("§c🧙✨ Invalid state. Use 'on' or 'off'.");
+                    return true;
+                }
+                
+                // find the target player
+                Player targetPlayer = plugin.getServer().getPlayer(targetPlayerName);
+                if (targetPlayer == null) {
+                    player.sendMessage("§c🧙✨ Player '" + targetPlayerName + "' is not online.");
+                    return true;
+                }
+                
+                // set the rate limit preference
+                plugin.getPlayerDataManager().setPlayerRateLimited(targetPlayer, enableRateLimit);
+                player.sendMessage("§a🛡️ Rate limiting " + (enableRateLimit ? "enabled" : "disabled") + " for " + targetPlayer.getName() + ".");
+                targetPlayer.sendMessage("§6🛡️ Rate limiting for InventoryWizard sorting has been " + (enableRateLimit ? "enabled" : "disabled") + " by an admin.");
+                break;
+                
 
                 
             default:
@@ -178,13 +208,30 @@ public class SortCommand implements CommandExecutor, TabCompleter {
             
             // Add admin commands for admins
             if (sender.hasPermission("inventorywizard.admin")) {
-                options = Arrays.asList("hotbar", "inventory", "all", "regen-credentials", "rate-limit", "reset-rate-limit");
+                options = Arrays.asList("hotbar", "inventory", "all", "regen-credentials", "rate-limit", "reset-rate-limit", "rate-limit-enabled");
             }
             
             return options.stream()
                     .filter(s -> s.toLowerCase().startsWith(args[0].toLowerCase()))
                     .collect(Collectors.toList());
         }
+        
+        // tab completion for rate-limit-enabled subcommand
+        if (args.length == 2 && args[0].equalsIgnoreCase("rate-limit-enabled") && sender.hasPermission("inventorywizard.admin")) {
+            // suggest online player names
+            return plugin.getServer().getOnlinePlayers().stream()
+                    .map(Player::getName)
+                    .filter(name -> name.toLowerCase().startsWith(args[1].toLowerCase()))
+                    .collect(Collectors.toList());
+        }
+        
+        // tab completion for rate-limit-enabled state
+        if (args.length == 3 && args[0].equalsIgnoreCase("rate-limit-enabled") && sender.hasPermission("inventorywizard.admin")) {
+            return Arrays.asList("on", "off").stream()
+                    .filter(s -> s.startsWith(args[2].toLowerCase()))
+                    .collect(Collectors.toList());
+        }
+        
         return null;
     }
 }

@@ -11,18 +11,18 @@ import java.util.*;
 public class InventorySorter {
     
     public static void sortInventory(Inventory inventory) {
-        sortInventory(inventory, PlayerSortPreferences.SortMode.DEFAULT, true);
+        sortInventory(inventory, PlayerDataManager.SortMode.DEFAULT, true);
     }
     
-    public static void sortInventory(Inventory inventory, PlayerSortPreferences.SortMode mode) {
+    public static void sortInventory(Inventory inventory, PlayerDataManager.SortMode mode) {
         sortInventory(inventory, mode, true);
     }
     
     public static void sortInventory(Inventory inventory, boolean allowPartialStacks) {
-        sortInventory(inventory, PlayerSortPreferences.SortMode.DEFAULT, allowPartialStacks);
+        sortInventory(inventory, PlayerDataManager.SortMode.DEFAULT, allowPartialStacks);
     }
     
-    public static void sortInventory(Inventory inventory, PlayerSortPreferences.SortMode mode, boolean allowPartialStacks) {
+    public static void sortInventory(Inventory inventory, PlayerDataManager.SortMode mode, boolean allowPartialStacks) {
         List<ItemStack> items = new ArrayList<>();
         
         // Collect all items from the inventory
@@ -58,18 +58,18 @@ public class InventorySorter {
     }
     
     public static void sortPlayerInventory(Player player) {
-        sortPlayerInventory(player, PlayerSortPreferences.SortMode.DEFAULT, true);
+        sortPlayerInventory(player, PlayerDataManager.SortMode.DEFAULT, true);
     }
     
-    public static void sortPlayerInventory(Player player, PlayerSortPreferences.SortMode mode) {
+    public static void sortPlayerInventory(Player player, PlayerDataManager.SortMode mode) {
         sortPlayerInventory(player, mode, true);
     }
     
     public static void sortPlayerInventory(Player player, boolean allowPartialStacks) {
-        sortPlayerInventory(player, PlayerSortPreferences.SortMode.DEFAULT, allowPartialStacks);
+        sortPlayerInventory(player, PlayerDataManager.SortMode.DEFAULT, allowPartialStacks);
     }
     
-    public static void sortPlayerInventory(Player player, PlayerSortPreferences.SortMode mode, boolean allowPartialStacks) {
+    public static void sortPlayerInventory(Player player, PlayerDataManager.SortMode mode, boolean allowPartialStacks) {
         PlayerInventory inventory = player.getInventory();
         List<ItemStack> items = new ArrayList<>();
         
@@ -111,10 +111,10 @@ public class InventorySorter {
     }
     
     public static void sortHotbar(Player player) {
-        sortHotbar(player, PlayerSortPreferences.SortMode.DEFAULT);
+        sortHotbar(player, PlayerDataManager.SortMode.DEFAULT);
     }
     
-    public static void sortHotbar(Player player, PlayerSortPreferences.SortMode mode) {
+    public static void sortHotbar(Player player, PlayerDataManager.SortMode mode) {
         PlayerInventory inventory = player.getInventory();
         List<ItemStack> items = new ArrayList<>();
         

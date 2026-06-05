@@ -2,7 +2,7 @@ package com.inventorywizard;
 
 import org.bukkit.entity.Player;
 
-public class PlayerSortPreferences {
+public class PlayerDataManager {
     
     public enum SortMode {
         DEFAULT(0, "Default"),
@@ -43,7 +43,7 @@ public class PlayerSortPreferences {
     private H2DatabaseManager database;
     private boolean useH2 = true;
     
-    public PlayerSortPreferences(InventoryWizardPlugin plugin) {
+    public PlayerDataManager(InventoryWizardPlugin plugin) {
         try {
             this.database = new H2DatabaseManager(plugin);
             plugin.getLogger().info("Using H2 database for player preferences.");
@@ -75,6 +75,20 @@ public class PlayerSortPreferences {
         // In fallback mode, just cycle through modes without persistence
         return SortMode.DEFAULT;
     }
+
+    public boolean isPlayerRateLimited(Player player) {
+        if (useH2 && database != null) {
+            return database.getPlayerRateLimitEnabled(player);
+        }
+        return true; // default to rate limited
+    }
+    
+    public void setPlayerRateLimited(Player player, boolean rateLimited) {
+        if (useH2 && database != null) {
+            database.setPlayerRateLimitEnabled(player, rateLimited);
+        }
+        // In fallback mode, we don't persist preferences
+    }
     
     public void close() {
         if (database != null) {
@@ -93,10 +107,9 @@ public class PlayerSortPreferences {
      * Regenerate database credentials for security purposes
      */
     public void regenerateCredentials() {
-        if (database != null) {
+        if (useH2 && database != null) {
             database.regenerateCredentials();
         }
     }
-    
 
 } 

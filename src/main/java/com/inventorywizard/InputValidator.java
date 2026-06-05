@@ -112,7 +112,7 @@ public class InputValidator {
      * @return ValidationResult containing validated parameters or error message
      */
     public static ValidationResult validateDatabaseInput(org.bukkit.entity.Player player, 
-                                                       PlayerSortPreferences.SortMode mode, 
+                                                       PlayerDataManager.SortMode mode, 
                                                        long timestamp) {
         // Validate player
         if (!validatePlayer(player)) {

@@ -4,16 +4,16 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 public class InventoryWizardPlugin extends JavaPlugin {
     
-    private PlayerSortPreferences playerPreferences;
+    private PlayerDataManager playerDataManager;
     private RateLimiter rateLimiter;
     
     @Override
     public void onEnable() {
-        // Initialize rate limiter
-        rateLimiter = new RateLimiter();
+        // Initialize player data manager
+        playerDataManager = new PlayerDataManager(this);
         
-        // Initialize player preferences
-        playerPreferences = new PlayerSortPreferences(this);
+        // Initialize rate limiter
+        rateLimiter = new RateLimiter(playerDataManager);
         
         // Register event listener
         getServer().getPluginManager().registerEvents(new SortListener(this), this);
@@ -37,8 +37,8 @@ public class InventoryWizardPlugin extends JavaPlugin {
         getLogger().info("Cast your sorting spells wisely! 🧙‍♂️");
     }
     
-    public PlayerSortPreferences getPlayerPreferences() {
-        return playerPreferences;
+    public PlayerDataManager getPlayerDataManager() {
+        return playerDataManager;
     }
     
     public RateLimiter getRateLimiter() {
@@ -47,8 +47,8 @@ public class InventoryWizardPlugin extends JavaPlugin {
     
     @Override
     public void onDisable() {
-        if (playerPreferences != null) {
-            playerPreferences.close();
+        if (playerDataManager != null) {
+            playerDataManager.close();
         }
         getLogger().info("InventoryWizard is resting... The magic will return! ✨");
     }

@@ -15,11 +15,17 @@ public class RateLimiter {
     private final Map<UUID, Long> lastSortTime = new ConcurrentHashMap<>();
     private final Map<UUID, Integer> sortCount = new ConcurrentHashMap<>();
     
+    private final PlayerDataManager playerDataManager;
+    
     // Configuration
     private static final long MIN_SORT_INTERVAL_MS = 10000; // 10 seconds between sorts
     private static final int MAX_SORTS_PER_MINUTE = 10; // Max 10 sorts per minute
     private static final long RESET_INTERVAL_MS = 60000; // Reset counter every minute
     private static final long MAX_SORT_DURATION_MS = 5000; // Max 5 seconds per sort operation
+    
+    public RateLimiter(PlayerDataManager playerDataManager) {
+        this.playerDataManager = playerDataManager;
+    }
     
     /**
      * Check if a player can perform a sort operation
@@ -29,6 +35,10 @@ public class RateLimiter {
     public boolean canSort(Player player) {
         if (player == null) {
             return false;
+        }
+        
+        if (!playerDataManager.isPlayerRateLimited(player)) {
+            return true; // no rate limiting for this player
         }
         
         UUID playerId = player.getUniqueId();

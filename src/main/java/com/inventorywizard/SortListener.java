@@ -11,11 +11,11 @@ import org.bukkit.inventory.Inventory;
 
 public class SortListener implements Listener {
     
-    private final PlayerSortPreferences preferences;
+    private final PlayerDataManager preferences;
     private final InventoryWizardPlugin plugin;
     
     public SortListener(InventoryWizardPlugin plugin) {
-        this.preferences = plugin.getPlayerPreferences();
+        this.preferences = plugin.getPlayerDataManager();
         this.plugin = plugin;
     }
     
@@ -44,7 +44,7 @@ public class SortListener implements Listener {
                 
                 // Special case: Slot 4 (middle hotbar slot) cycles sorting modes
                 if (event.getSlot() == 4) {
-                    PlayerSortPreferences.SortMode newMode = preferences.cyclePlayerSortMode(player);
+                    PlayerDataManager.SortMode newMode = preferences.cyclePlayerSortMode(player);
                     player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 0.5f, 1.6f);
                     player.sendMessage("§e🔄 Sorting mode changed to: §6" + newMode.getDisplayName());
                     return;
@@ -63,7 +63,7 @@ public class SortListener implements Listener {
                 
                 // Check for combined sorting permission first
                 if (player.hasPermission("inventorywizard.all")) {
-                    PlayerSortPreferences.SortMode mode = preferences.getPlayerSortMode(player);
+                    PlayerDataManager.SortMode mode = preferences.getPlayerSortMode(player);
                     InventorySorter.sortPlayerInventory(player, mode);
                     InventorySorter.sortHotbar(player, mode);
                     
@@ -80,7 +80,7 @@ public class SortListener implements Listener {
                 }
                 // Fall back to hotbar-only sorting
                 else if (player.hasPermission("inventorywizard.hotbar")) {
-                    PlayerSortPreferences.SortMode mode = preferences.getPlayerSortMode(player);
+                    PlayerDataManager.SortMode mode = preferences.getPlayerSortMode(player);
                     InventorySorter.sortHotbar(player, mode);
                     
                     // Record the sort operation
@@ -114,7 +114,7 @@ public class SortListener implements Listener {
                 }
                 
                 long startTime = System.currentTimeMillis();
-                PlayerSortPreferences.SortMode mode = preferences.getPlayerSortMode(player);
+                PlayerDataManager.SortMode mode = preferences.getPlayerSortMode(player);
                 InventorySorter.sortInventory(clickedInventory, mode);
                 
                 // Record the sort operation
@@ -144,7 +144,7 @@ public class SortListener implements Listener {
                 }
                 
                 long startTime = System.currentTimeMillis();
-                PlayerSortPreferences.SortMode mode = preferences.getPlayerSortMode(player);
+                PlayerDataManager.SortMode mode = preferences.getPlayerSortMode(player);
                 InventorySorter.sortPlayerInventory(player, mode);
                 
                 // Record the sort operation
@@ -185,7 +185,7 @@ public class SortListener implements Listener {
                 }
                 
                 long startTime = System.currentTimeMillis();
-                PlayerSortPreferences.SortMode mode = preferences.getPlayerSortMode(player);
+                PlayerDataManager.SortMode mode = preferences.getPlayerSortMode(player);
                 InventorySorter.sortHotbar(player, mode);
                 
                 // Record the sort operation
