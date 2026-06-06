@@ -37,9 +37,9 @@ InventoryWizard is a powerful PaperMC plugin that brings intelligent, one-click 
 4. **Configure** the plugin using `plugins/InventoryWizard/config.yml` (optional)
 
 ### Requirements
-- **Minecraft**: 1.21.x
+- **Minecraft**: 26.1.
 - **Server**: PaperMC, Spigot, or compatible fork
-- **Java**: 17 or higher
+- **Java**: 26 or higher
 
 ### Database
 - **H2 Database**: Embedded, no external setup required
@@ -211,9 +211,9 @@ mvn clean package
 ```
 
 ### Development Requirements
-- Java 17+
-- Maven 3.6+
-- PaperMC API 1.21.4+
+- Java 26+
+- Maven 3.9.12+
+- PaperMC API 26.1.2+
 
 ## 🤝 Contributing
 
@@ -226,6 +226,12 @@ Contributions are welcome! Please feel free to submit pull requests, report bugs
 5. **Submit** a pull request
 
 ## 📜 Changelog
+
+# Version 1.2.0
+- 🔧 Update project dependencies, Java 26 compatibility
+- 🔧Add Option to Configure Rate-Limiting on a Per-Player Basis [nickcisne](https://github.com/nickcisne)
+- 🔧Add Ability to Sort Other Containers [nickcisne](https://github.com/nickcisne)
+
 
 # Version 1.1.1
 - 🛡️ **Rate Limiting Added** - Prevents excessive sorting to avoid server lag and abuse (configurable per player)
