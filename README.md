@@ -5,7 +5,7 @@
 InventoryWizard is a powerful PaperMC plugin that brings intelligent, one-click inventory organization to your server. With intuitive controls and smart categorization, managing your items has never been easier!
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
-![Minecraft](https://img.shields.io/badge/minecraft-1.21.x-green.svg)
+![Minecraft](https://img.shields.io/badge/minecraft-26.1.x-green.svg)
 ![PaperMC](https://img.shields.io/badge/server-PaperMC-orange.svg)
 
 ## 🌟 Features
