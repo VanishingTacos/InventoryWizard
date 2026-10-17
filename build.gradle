@@ -43,3 +43,13 @@ jar {
 		rename { "${it}_$projectName" }
 	}
 }
+
+fabricApi {
+	configureTests {
+		createSourceSet = true
+		modId = "inventorywizard-test"
+		enableGameTests = false
+		enableClientGameTests = true
+		eula = true
+	}
+}

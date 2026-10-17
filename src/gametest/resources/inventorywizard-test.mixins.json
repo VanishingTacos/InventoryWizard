@@ -1,0 +1,11 @@
+{
+	"required": true,
+	"package": "com.inventorywizard.test.mixin",
+	"compatibilityLevel": "JAVA_25",
+	"client": [
+		"ScreenPositionAccessor"
+	],
+	"injectors": {
+		"defaultRequire": 1
+	}
+}
