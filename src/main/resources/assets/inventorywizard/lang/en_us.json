@@ -1,0 +1,22 @@
+{
+	"key.category.inventorywizard.main": "InventoryWizard",
+	"key.inventorywizard.sort": "Sort",
+	"key.inventorywizard.cycle_mode": "Cycle Sorting Mode",
+
+	"inventorywizard.mode.default": "Default",
+	"inventorywizard.mode.alphabetical": "Alphabetical",
+	"inventorywizard.mode.stack_based": "Stack-based",
+
+	"inventorywizard.container.chest": "Chest",
+	"inventorywizard.container.shulker_box": "Shulker Box",
+	"inventorywizard.container.barrel": "Barrel",
+	"inventorywizard.container.ender_chest": "Ender Chest",
+
+	"inventorywizard.message.container_sorted": "✨ %s magically sorted! (%s)",
+	"inventorywizard.message.inventory_sorted": "✨ Inventory organized with wizard magic! (%s)",
+	"inventorywizard.message.hotbar_sorted": "✨ Hotbar arranged by wizardry! (%s)",
+	"inventorywizard.message.all_sorted": "🧙✨ Complete inventory enchanted by the InventoryWizard! (%s)",
+	"inventorywizard.message.mode_changed": "🔄 Sorting mode changed to: %s",
+	"inventorywizard.message.disabled": "That kind of sorting is turned off in the InventoryWizard config.",
+	"inventorywizard.message.singleplayer_only": "InventoryWizard only works in singleplayer worlds (or as the LAN host)."
+}
