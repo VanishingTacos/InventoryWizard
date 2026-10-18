@@ -17,6 +17,9 @@
 	"entrypoints": {
 		"client": [
 			"com.inventorywizard.InventoryWizardClient"
+		],
+		"modmenu": [
+			"com.inventorywizard.ModMenuIntegration"
 		]
 	},
 	"mixins": [
@@ -27,5 +30,8 @@
 		"minecraft": "~26.3",
 		"java": ">=25",
 		"fabric-api": "*"
+	},
+	"suggests": {
+		"modsettings": "*"
 	}
 }

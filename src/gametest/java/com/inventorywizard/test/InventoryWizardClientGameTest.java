@@ -1,6 +1,8 @@
 package com.inventorywizard.test;
 
 import com.inventorywizard.InventoryWizardClient;
+import com.inventorywizard.InventoryWizardConfig;
+import com.inventorywizard.InventoryWizardConfigScreen;
 import com.inventorywizard.SortMode;
 import com.inventorywizard.mixin.AbstractContainerScreenAccessor;
 import com.inventorywizard.test.mixin.ScreenPositionAccessor;
@@ -11,6 +13,10 @@ import net.fabricmc.fabric.api.client.gametest.v1.context.TestDedicatedServerCon
 import net.fabricmc.fabric.api.client.gametest.v1.context.TestServerConnection;
 import net.fabricmc.fabric.api.client.gametest.v1.context.TestServerContext;
 import net.fabricmc.fabric.api.client.gametest.v1.context.TestSingleplayerContext;
+import net.minecraft.client.gui.components.AbstractWidget;
+import net.minecraft.client.gui.components.events.ContainerEventHandler;
+import net.minecraft.client.gui.components.events.GuiEventListener;
+import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.gui.screens.inventory.ContainerScreen;
 import net.minecraft.client.gui.screens.inventory.InventoryScreen;
@@ -59,6 +65,8 @@ public class InventoryWizardClientGameTest implements FabricClientGameTest {
             InventoryWizardClient.config().save();
         });
 
+        testConfigScreen(context);
+
         try (TestSingleplayerContext singleplayer = context.worldBuilder().create()) {
             singleplayer.getConnection().waitForChunksRender();
             TestServerContext server = singleplayer.getServer();
@@ -78,6 +86,30 @@ public class InventoryWizardClientGameTest implements FabricClientGameTest {
         }
 
         testDedicatedServerDoesNothing(context);
+    }
+
+    // ---- settings screen -----------------------------------------------------
+
+    private static void testConfigScreen(ClientGameTestContext context) {
+        context.runOnClient(client -> InventoryWizardClient.config().showMessages = true);
+
+        context.setScreen(() -> new InventoryWizardConfigScreen(new TitleScreen()));
+        context.waitForScreen(InventoryWizardConfigScreen.class);
+        context.takeScreenshot("inventorywizard-config-screen");
+
+        clickWidget(context, "Chat Messages");
+        boolean toggled = context.computeOnClient(client -> InventoryWizardClient.config().showMessages);
+        assertEquals("show messages after clicking its button", false, toggled);
+
+        context.clickScreenButton("gui.done");
+        context.waitForScreen(TitleScreen.class);
+        boolean reloaded = context.computeOnClient(client -> InventoryWizardConfig.load().showMessages);
+        assertEquals("show messages saved when the screen closes", false, reloaded);
+
+        context.runOnClient(client -> {
+            InventoryWizardClient.config().showMessages = true;
+            InventoryWizardClient.config().save();
+        });
     }
 
     // ---- singleplayer tests -------------------------------------------------
@@ -335,6 +367,39 @@ public class InventoryWizardClientGameTest implements FabricClientGameTest {
     }
 
     /** Moves the real cursor over a slot and checks the screen agrees it's hovered. */
+    /** Option buttons are labelled "Caption: Value", which clickScreenButton can't match, so find them by text. */
+    private static void clickWidget(ClientGameTestContext context, String labelPrefix) {
+        double[] position = context.computeOnClient(client -> {
+            AbstractWidget widget = findWidget(client.gui.screen(), labelPrefix);
+            if (widget == null) {
+                throw new AssertionError("No widget labelled '" + labelPrefix + "...' on screen");
+            }
+            double scale = (double) client.getWindow().getScreenWidth() / client.getWindow().getGuiScaledWidth();
+            return new double[] {
+                    (widget.getX() + widget.getWidth() / 2.0) * scale,
+                    (widget.getY() + widget.getHeight() / 2.0) * scale
+            };
+        });
+        context.getInput().setCursorPos(position[0], position[1]);
+        context.getInput().pressMouse(InputConstants.MOUSE_BUTTON_LEFT);
+        context.waitTicks(2);
+    }
+
+    private static AbstractWidget findWidget(ContainerEventHandler parent, String labelPrefix) {
+        for (GuiEventListener child : parent.children()) {
+            if (child instanceof AbstractWidget widget && widget.getMessage().getString().startsWith(labelPrefix)) {
+                return widget;
+            }
+            if (child instanceof ContainerEventHandler container) {
+                AbstractWidget found = findWidget(container, labelPrefix);
+                if (found != null) {
+                    return found;
+                }
+            }
+        }
+        return null;
+    }
+
     private static void hoverSlot(ClientGameTestContext context, Predicate<Slot> which) {
         double[] position = context.computeOnClient(client -> {
             AbstractContainerScreen<?> screen = (AbstractContainerScreen<?>) client.gui.screen();

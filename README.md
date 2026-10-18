@@ -36,7 +36,7 @@ InventoryWizard is a Fabric mod that brings intelligent, one-click inventory org
 1. **Install** [Fabric Loader](https://fabricmc.net/use/) 0.19.5+ for Minecraft 26.3
 2. **Download** [Fabric API](https://modrinth.com/mod/fabric-api) for 26.3 and the latest `InventoryWizard-x.x.x.jar` from the [releases page](https://github.com/VanishingTacos/inventorywizard/releases)
 3. **Place** both JARs in your `.minecraft/mods` folder
-4. **Configure** the mod using `config/inventorywizard.json` (optional)
+4. **Configure** the mod in-game with [Mod Settings](https://modrinth.com/mod/mod-settings) or [Mod Menu](https://modrinth.com/mod/modmenu), or by editing `config/inventorywizard.json` (optional)
 
 ### Requirements
 - **Minecraft**: 26.3
@@ -82,6 +82,12 @@ Both keys can be changed under **Options → Controls → Key Binds → Inventor
 
 ## ⚙️ Configuration
 
+### In-game settings
+Install [Mod Settings](https://modrinth.com/mod/mod-settings) to change settings from the **pause menu** (the **Mod Settings...** button, or press `F6`) - pick **InventoryWizard**. [Mod Menu](https://modrinth.com/mod/modmenu) works too. The screen covers the sorting mode, chat messages, sound on/off and volume, which containers can be sorted, and partial stack placement. Changes apply immediately and are saved when you press **Done**.
+
+The sound id/pitch and hotbar priorities can only be changed in the JSON file.
+
+### Config file
 The mod generates `config/inventorywizard.json`:
 
 ```json
