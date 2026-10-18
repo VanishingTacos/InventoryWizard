@@ -254,3 +254,7 @@ If you enjoy using InventoryWizard and want to support its development, you can 
 **Made with** ❤️ **and** ✨ **for the Minecraft community**
 
 *Transform your chaotic inventory into organized perfection with InventoryWizard!* 🧙‍♂️
+
+---
+
+<sub>🤖 **AI disclosure:** Parts of this project, including code, tests and documentation, were written with the help of AI tools. All AI-assisted changes are reviewed by the maintainer.</sub>
