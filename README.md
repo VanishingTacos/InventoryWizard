@@ -175,7 +175,7 @@ git checkout fabric
 # Build with Gradle (needs a Java 25 JDK)
 ./gradlew build
 
-# The JAR will be in build/libs/InventoryWizard-2.0.0.jar
+# The JAR will be in build/libs/InventoryWizard-x.x.x.jar
 
 # Launch a development client
 ./gradlew runClient
@@ -195,50 +195,6 @@ Contributions are welcome! Please feel free to submit pull requests, report bugs
 3. **Commit** your changes: `git commit -am 'Add some feature'`
 4. **Push** to the branch: `git push origin feature-name`
 5. **Submit** a pull request
-
-
-## 📜 Changelog
-
-# Version 2.0.0 (Fabric)
-- 🧵 **Ported to Fabric** for Minecraft 26.3 as a client-side, singleplayer mod
-- ⌨️ **Sort and Cycle Sorting Mode key bindings** replace double-click hotbar sorting
-- 🗑️ **Removed multiplayer features** - permissions, rate limiting, admin commands and the H2 database (the sort mode is now stored in the config)
-- 🐛 **Partial-stack options now take effect** - they were never applied in the plugin, and leftover partial stacks are now kept instead of being dropped
-
-# Version 1.2.0
-- 🔧 Update project dependencies, Java 26 compatibility
-- 🔧Add Option to Configure Rate-Limiting on a Per-Player Basis [nickcisne](https://github.com/nickcisne)
-- 🔧Add Ability to Sort Other Containers [nickcisne](https://github.com/nickcisne)
-
-
-# Version 1.1.1
-- 🛡️ **Rate Limiting Added** - Prevents excessive sorting to avoid server lag and abuse (configurable per player)
-- 🗃️ **H2 Database** - Improved performance and secuirty for inventory data storage
-- 🐛 **Bug Fixes** - Fixed rare issues with inventory sync and sorting edge cases
-- 📚 **Documentation Improvements** - Expanded README and in-game help for new features
-
-
-### Version 1.1.0
-- ✨ **New Stack-based Sorting Mode** - Group items by type, then sort by stack size (full stacks first)
-  - 🔄 **Preserved Individual Stacks** - Partial stacks maintain their original sizes without combining
-- 📦 **Alphabetical Material Grouping** - Items grouped alphabetically by material name within stack-based mode
-- 🎯 **Enhanced Sorting Logic** - Improved stack size sorting (largest to smallest within each material type)
-- 🧙‍♂️ **Mode Cycling** - Easily switch between Default, Alphabetical, and Stack-based sorting modes
-
-### Version 1.0.1
-- 🔧 **Fixed control scheme** - Removed middle click, improved Shift+Right Click logic
-- 🎯 **Enhanced hotbar sorting** - Priority-based permission system for combined sorting
-- 🛠️ **Code optimization** - Eliminated duplicate event handlers and improved reliability
-- 📝 **Updated documentation** - Clearer instructions and permission requirements
-
-### Version 1.0.0
-- ✨ Initial release
-- 🧙‍♂️ Smart inventory sorting with type-based categorization
-- 🎯 Hotbar optimization for PvP/survival gameplay
-- 📦 Chest organization support
-- 🖱️ Multiple control methods (click-based and commands)
-- 🔊 Audio feedback and magical messages
-- ⚙️ Comprehensive configuration options
 
 ## 📄 License
 
