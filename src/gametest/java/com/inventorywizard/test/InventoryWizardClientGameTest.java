@@ -57,6 +57,8 @@ public class InventoryWizardClientGameTest implements FabricClientGameTest {
 
     private static final int SORT_KEY = InputConstants.KEY_R;
     private static final int SORT_WAIT_TICKS = 5;
+    /** Extra ticks to linger after each step so a person can follow along: ./gradlew runClientGameTest -PtestPace=20 */
+    private static final int PACE_TICKS = Integer.getInteger("inventorywizard.test.pace", 0);
 
     @Override
     public void runTest(ClientGameTestContext context) {
@@ -73,6 +75,7 @@ public class InventoryWizardClientGameTest implements FabricClientGameTest {
             server.runCommand("gamemode survival @a");
             server.runCommand("time set day");
             context.waitTicks(5);
+            pace(context);
 
             testInventoryShiftRightClick(context, server);
             testSortKeyOnHotbar(context, server);
@@ -96,6 +99,7 @@ public class InventoryWizardClientGameTest implements FabricClientGameTest {
         context.setScreen(() -> new InventoryWizardConfigScreen(new TitleScreen()));
         context.waitForScreen(InventoryWizardConfigScreen.class);
         context.takeScreenshot("inventorywizard-config-screen");
+        pace(context);
 
         clickWidget(context, "Chat Messages");
         boolean toggled = context.computeOnClient(client -> InventoryWizardClient.config().showMessages);
@@ -136,6 +140,7 @@ public class InventoryWizardClientGameTest implements FabricClientGameTest {
         hoverSlot(context, inventorySlot(15));
         shiftRightClick(context);
         context.takeScreenshot("inventorywizard-inventory-sorted");
+        pace(context);
 
         List<String> main = inventoryRange(server, 9, 36);
         assertPrefix("inventory shift+right-click", main,
@@ -154,6 +159,7 @@ public class InventoryWizardClientGameTest implements FabricClientGameTest {
         context.getInput().pressKey(SORT_KEY);
         context.waitTicks(SORT_WAIT_TICKS);
         context.takeScreenshot("inventorywizard-hotbar-sorted");
+        pace(context);
 
         List<String> hotbar = inventoryRange(server, 0, 9);
         assertPrefix("sort key on hotbar", hotbar, "iron_sword x1", "diamond_pickaxe x1", "bread x3", "cobblestone x10");
@@ -167,6 +173,7 @@ public class InventoryWizardClientGameTest implements FabricClientGameTest {
         hoverSlot(context, inventorySlot(4));
         shiftRightClick(context);
         context.takeScreenshot("inventorywizard-mode-cycled");
+        pace(context);
 
         SortMode mode = context.computeOnClient(client -> InventoryWizardClient.config().sortMode);
         assertEquals("mode after Shift+Right-click on hotbar slot 4", SortMode.ALPHABETICAL, mode);
@@ -229,6 +236,7 @@ public class InventoryWizardClientGameTest implements FabricClientGameTest {
 
         sortOpenContainer(context, input);
         context.takeScreenshot("inventorywizard-" + name + "-sorted");
+        pace(context);
 
         List<String> items = server.computeOnServer(s -> describe((Container) s.overworld().getBlockEntity(pos)));
         assertSortedScrambled(name, items);
@@ -247,6 +255,7 @@ public class InventoryWizardClientGameTest implements FabricClientGameTest {
 
         sortOpenContainer(context, Input.SORT_KEY_NO_HOVER);
         context.takeScreenshot("inventorywizard-ender_chest-sorted");
+        pace(context);
 
         List<String> items = server.computeOnServer(s -> describe(player(s).getEnderChestInventory()));
         assertSortedScrambled("ender_chest", items);
@@ -270,6 +279,7 @@ public class InventoryWizardClientGameTest implements FabricClientGameTest {
 
         sortOpenContainer(context, Input.SORT_KEY_NO_HOVER);
         context.takeScreenshot("inventorywizard-barrel-disabled");
+        pace(context);
 
         List<String> after = server.computeOnServer(s -> describe((Container) s.overworld().getBlockEntity(pos)));
         assertEquals("disabled barrel sorting leaves the barrel alone", before, after);
@@ -301,6 +311,7 @@ public class InventoryWizardClientGameTest implements FabricClientGameTest {
                 context.getInput().pressKey(SORT_KEY);
                 context.waitTicks(SORT_WAIT_TICKS);
                 context.takeScreenshot("inventorywizard-multiplayer-noop");
+                pace(context);
 
                 boolean singleplayer = context.computeOnClient(client -> client.hasSingleplayerServer());
                 assertEquals("connected to a remote server", false, singleplayer);
@@ -312,12 +323,20 @@ public class InventoryWizardClientGameTest implements FabricClientGameTest {
 
     // ---- input helpers -------------------------------------------------------
 
+    private static void pace(ClientGameTestContext context) {
+        if (PACE_TICKS > 0) {
+            context.waitTicks(PACE_TICKS);
+        }
+    }
+
     private static void openInventory(ClientGameTestContext context) {
         context.getInput().pressKey(options -> options.keyInventory);
         context.waitForScreen(InventoryScreen.class);
+        pace(context);
     }
 
     private static void closeScreen(ClientGameTestContext context) {
+        pace(context);
         context.runOnClient(client -> client.player.closeContainer());
         context.waitTicks(3);
     }

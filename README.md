@@ -83,7 +83,7 @@ Both keys can be changed under **Options → Controls → Key Binds → Inventor
 ## ⚙️ Configuration
 
 ### In-game settings
-Install [Mod Settings](https://modrinth.com/mod/mod-settings) to change settings from the **pause menu** (the **Mod Settings...** button, or press `F6`) - pick **InventoryWizard**. [Mod Menu](https://modrinth.com/mod/modmenu) works too. The screen covers the sorting mode, chat messages, sound on/off and volume, which containers can be sorted, and partial stack placement. Changes apply immediately and are saved when you press **Done**.
+Install [Mod Settings](https://modrinth.com/mod/mod-settings) to change settings from the **pause menu** (the **Mod Settings...** button, or press `F6`) - pick **InventoryWizard**. [Mod Menu](https://modrinth.com/mod/modmenu) works too. The screen covers the sorting mode, chat messages, sound on/off and volume, the update check, which containers can be sorted, and partial stack placement. Changes apply immediately and are saved when you press **Done**.
 
 The sound id/pitch and hotbar priorities can only be changed in the JSON file.
 
@@ -117,9 +117,14 @@ The mod generates `config/inventorywizard.json`:
     "buildingBlocks": 400,
     "utilityItems": 500,
     "other": 999
-  }
+  },
+  "checkForUpdates": true
 }
 ```
+
+#### Update Check
+- With `checkForUpdates` on, the mod asks [Modrinth](https://modrinth.com/mod/inventorywizard) at startup for the newest Fabric release for your Minecraft version. If it is newer than yours, you get one chat message with a download link when you join a world.
+- Set it to `false` to turn off the request entirely (takes effect after a restart).
 
 #### Partial Stack Sorting Behavior
 - `allowPartialStacksChest` and `allowPartialStacksInventory` control where leftover partial stacks go in containers and the player inventory.

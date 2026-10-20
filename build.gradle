@@ -70,3 +70,11 @@ fabricApi {
 		eula = true
 	}
 }
+
+// Optional slow-motion for watching the client gametests: -PtestPace=<ticks per step>
+tasks.named('runClientGameTest') {
+	def pace = providers.gradleProperty('testPace')
+	if (pace.isPresent()) {
+		systemProperty 'inventorywizard.test.pace', pace.get()
+	}
+}

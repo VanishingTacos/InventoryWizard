@@ -38,7 +38,8 @@ public class InventoryWizardConfigScreen extends OptionsSubScreen {
         list.addHeader(Component.translatable("inventorywizard.config.header.feedback"));
         list.addSmall(
                 bool("show_messages", config.showMessages, v -> config.showMessages = v),
-                bool("play_sound", config.playSound, v -> config.playSound = v));
+                bool("play_sound", config.playSound, v -> config.playSound = v),
+                bool("check_for_updates", config.checkForUpdates, v -> config.checkForUpdates = v));
         list.addBig(new OptionInstance<>(
                 "inventorywizard.config.sound_volume",
                 OptionInstance.noTooltip(),

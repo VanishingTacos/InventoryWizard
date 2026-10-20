@@ -34,6 +34,9 @@ public class InventoryWizardConfig {
 
     public HotbarPriorities hotbarPriorities = new HotbarPriorities();
 
+    /** Look up the newest release on Modrinth at startup and mention it in chat. */
+    public boolean checkForUpdates = true;
+
     public static class Sound {
         public String id = "minecraft:ui.button.click";
         public float volume = 0.5f;

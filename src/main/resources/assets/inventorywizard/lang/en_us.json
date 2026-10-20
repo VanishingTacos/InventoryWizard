@@ -19,6 +19,8 @@
 	"inventorywizard.message.mode_changed": "🔄 Sorting mode changed to: %s",
 	"inventorywizard.message.disabled": "That kind of sorting is turned off in the InventoryWizard config.",
 	"inventorywizard.message.singleplayer_only": "InventoryWizard only works in singleplayer worlds (or as the LAN host).",
+	"inventorywizard.update.available": "🧙 InventoryWizard %s is available! %s",
+	"inventorywizard.update.download": "[Download]",
 
 	"inventorywizard.config.title": "InventoryWizard Settings",
 	"inventorywizard.config.sort_mode": "Sorting Mode",
@@ -27,6 +29,8 @@
 	"inventorywizard.config.show_messages.tooltip": "Show a chat message after sorting or changing the sort mode.",
 	"inventorywizard.config.play_sound": "Sort Sound",
 	"inventorywizard.config.play_sound.tooltip": "Play a sound after sorting.",
+	"inventorywizard.config.check_for_updates": "Update Check",
+	"inventorywizard.config.check_for_updates.tooltip": "Check Modrinth for a newer version at startup and mention it in chat. Takes effect after a restart.",
 	"inventorywizard.config.sound_volume": "Sound Volume",
 	"inventorywizard.config.header.features": "Sorting Enabled For",
 	"inventorywizard.config.feature.chest": "Chests",
