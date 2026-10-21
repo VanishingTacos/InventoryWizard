@@ -1,0 +1,39 @@
+plugins {
+	id 'inventorywizard-clientgametest'
+	id 'net.neoforged.moddev'
+}
+
+sourceSets {
+	gametest
+}
+useCommonGametests(sourceSets.gametest)
+
+neoForge {
+	version = project.neoforge_version
+
+	runs {
+		client {
+			client()
+			gameDirectory = rootProject.file('run/neoforge')
+		}
+		// ./gradlew :neoforge:runClientGameTest runs common/src/gametest in a fresh game and exits with the result
+		clientGameTest {
+			client()
+			sourceSet = sourceSets.gametest
+			gameDirectory = gameTestRunDir
+			systemProperty 'inventorywizard.clientGameTest', 'true'
+		}
+	}
+
+	mods {
+		"${project.mod_id}" {
+			sourceSet sourceSets.main
+			// Dev runs only; the test classes do nothing unless inventorywizard.clientGameTest is set
+			sourceSet sourceSets.gametest
+		}
+	}
+}
+
+tasks.named('runClientGameTest') {
+	dependsOn(cleanGameTestRun)
+}

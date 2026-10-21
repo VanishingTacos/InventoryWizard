@@ -1,0 +1,41 @@
+// Shared by every subproject: Java level, jar naming and resource templating
+plugins {
+	id 'java'
+}
+
+version = rootProject.version
+group = rootProject.group
+
+base {
+	archivesName = "${rootProject.archives_base_name}-${project.name}"
+}
+
+tasks.withType(JavaCompile).configureEach {
+	it.options.encoding = 'UTF-8'
+	it.options.release = 25
+}
+
+java {
+	withSourcesJar()
+
+	sourceCompatibility = JavaVersion.VERSION_25
+	targetCompatibility = JavaVersion.VERSION_25
+}
+
+tasks.withType(Jar).configureEach {
+	def projectName = rootProject.name
+	inputs.property "projectName", projectName
+
+	from(rootProject.file("LICENSE")) {
+		rename { "${it}_$projectName" }
+	}
+}
+
+processResources {
+	def props = [version: project.version, minecraft_version: project.minecraft_version, neoforge_version: project.neoforge_version, forge_version: project.forge_version]
+	inputs.properties props
+
+	filesMatching(["fabric.mod.json", "META-INF/neoforge.mods.toml", "META-INF/mods.toml"]) {
+		expand props
+	}
+}

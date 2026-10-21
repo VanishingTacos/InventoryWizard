@@ -1,0 +1,35 @@
+// For loaders without Fabric's client gametest API: compiles common/src/gametest into a
+// source set of the loader's choosing, which only its gametest run puts into the mod.
+// Call useCommonGametests(sourceSet) from the loader's build file.
+plugins {
+	id 'inventorywizard-loader'
+}
+
+configurations {
+	commonGametestJava {
+		canBeResolved = true
+		canBeConsumed = false
+	}
+}
+
+dependencies {
+	commonGametestJava(project(path: ':common', configuration: 'commonGametestJava'))
+}
+
+ext.useCommonGametests = { SourceSet sourceSet ->
+	def main = sourceSets.main
+	sourceSet.compileClasspath += main.output + main.compileClasspath
+	sourceSet.runtimeClasspath += main.output + main.runtimeClasspath
+	tasks.named(sourceSet.compileJavaTaskName, JavaCompile) {
+		dependsOn(configurations.commonGametestJava)
+		source(configurations.commonGametestJava)
+	}
+}
+
+// Start every run from a fresh game folder, like Fabric's runClientGameTest
+def gameTestRunDir = rootProject.file("run/${project.name}-gametest")
+def cleanGameTestRun = tasks.register('cleanClientGameTestRun', Delete) {
+	delete gameTestRunDir
+}
+ext.gameTestRunDir = gameTestRunDir
+ext.cleanGameTestRun = cleanGameTestRun

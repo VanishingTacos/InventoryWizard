@@ -1,0 +1,56 @@
+plugins {
+	id 'inventorywizard-common'
+	id 'net.neoforged.moddev'
+}
+
+repositories {
+	maven {
+		name = 'Fabric'
+		url = 'https://maven.fabricmc.net/'
+		content { includeGroup 'net.fabricmc' }
+	}
+}
+
+// Vanilla Minecraft only; anything loader-specific goes through com.inventorywizard.platform.Platform
+neoForge {
+	neoFormVersion = project.neo_form_version
+}
+
+dependencies {
+	// Fabric Loader and NeoForge both ship Mixin
+	compileOnly "net.fabricmc:sponge-mixin:${project.mixin_version}"
+}
+
+configurations {
+	commonJava {
+		canBeResolved = false
+		canBeConsumed = true
+	}
+	commonResources {
+		canBeResolved = false
+		canBeConsumed = true
+	}
+}
+
+artifacts {
+	commonJava sourceSets.main.java.sourceDirectories.singleFile
+	commonResources sourceSets.main.resources.sourceDirectories.singleFile
+}
+
+// NeoForge/Forge client gametests; compiled here against vanilla, run by each loader's runClientGameTest
+sourceSets {
+	gametest {
+		compileClasspath += main.output + main.compileClasspath
+	}
+}
+
+configurations {
+	commonGametestJava {
+		canBeResolved = false
+		canBeConsumed = true
+	}
+}
+
+artifacts {
+	commonGametestJava sourceSets.gametest.java.sourceDirectories.singleFile
+}

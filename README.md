@@ -2,7 +2,7 @@
 
 **The magical sorting assistant for your Minecraft world!** ✨
 
-InventoryWizard is a Fabric mod (that also runs on Quilt) that brings intelligent, one-click inventory organization to your singleplayer worlds. With intuitive controls and smart categorization, managing your items has never been easier!
+InventoryWizard is a client-side mod for Fabric, Quilt, NeoForge and Forge that brings intelligent, one-click inventory organization to your singleplayer worlds. With intuitive controls and smart categorization, managing your items has never been easier!
 
 > Looking for the PaperMC server plugin? It lives on the [`main` branch](https://github.com/VanishingTacos/InventoryWizard/tree/main).
 
@@ -10,6 +10,8 @@ InventoryWizard is a Fabric mod (that also runs on Quilt) that brings intelligen
 ![Minecraft](https://img.shields.io/badge/minecraft-26.3-green.svg)
 ![Fabric](https://img.shields.io/badge/loader-Fabric-orange.svg)
 ![Quilt](https://img.shields.io/badge/loader-Quilt-purple.svg)
+![NeoForge](https://img.shields.io/badge/loader-NeoForge-red.svg)
+![Forge](https://img.shields.io/badge/loader-Forge-lightgrey.svg)
 
 ## 🌟 Features
 
@@ -34,15 +36,27 @@ InventoryWizard is a Fabric mod (that also runs on Quilt) that brings intelligen
 
 ## 📥 Installation
 
+### Fabric / Quilt
 1. **Install** [Fabric Loader](https://fabricmc.net/use/) 0.19.3+ (or [Quilt Loader](https://quiltmc.org/en/install/)) for Minecraft 26.3
-2. **Download** [Fabric API](https://modrinth.com/mod/fabric-api) for 26.3 and the latest `InventoryWizard-x.x.x.jar` from the [releases page](https://github.com/VanishingTacos/inventorywizard/releases)
+2. **Download** [Fabric API](https://modrinth.com/mod/fabric-api) for 26.3 and the latest `InventoryWizard-fabric-x.x.x.jar` from the [releases page](https://github.com/VanishingTacos/inventorywizard/releases)
 3. **Place** both JARs in your `.minecraft/mods` folder
 4. **Configure** the mod in-game with [Mod Settings](https://modrinth.com/mod/mod-settings) or [Mod Menu](https://modrinth.com/mod/modmenu), or by editing `config/inventorywizard.json` (optional)
 
+### NeoForge
+1. **Install** [NeoForge](https://neoforged.net/) 26.3.0.95+ for Minecraft 26.3
+2. **Download** the latest `InventoryWizard-neoforge-x.x.x.jar` from the [releases page](https://github.com/VanishingTacos/inventorywizard/releases) and place it in your `.minecraft/mods` folder
+3. **Configure** the mod in-game from **Mods → InventoryWizard → Config**, or by editing `config/inventorywizard.json` (optional)
+
+### Forge
+1. **Install** [Forge](https://files.minecraftforge.net/net/minecraftforge/forge/index_26.3.html) 66.0.13+ for Minecraft 26.3
+2. **Download** the latest `InventoryWizard-forge-x.x.x.jar` from the [releases page](https://github.com/VanishingTacos/inventorywizard/releases) and place it in your `.minecraft/mods` folder
+3. **Configure** the mod in-game from **Mods → InventoryWizard → Config**, or by editing `config/inventorywizard.json` (optional)
+
 ### Requirements
 - **Minecraft**: 26.3
-- **Fabric Loader**: 0.19.3 or newer, or **Quilt Loader** 0.30.1 or newer
-- **Fabric API**: 0.163.0+26.3 or newer (on Quilt too, since Quilted Fabric API is retired)
+- **Fabric Loader**: 0.19.3 or newer, or **Quilt Loader** 0.30.1 or newer, with **Fabric API** 0.163.0+26.3 or newer (on Quilt too, since Quilted Fabric API is retired)
+- **NeoForge**: 26.3.0.95 or newer
+- **Forge**: 66.0.13 or newer
 - **Java**: 25 or higher
 
 ### Singleplayer only
@@ -84,7 +98,7 @@ Both keys can be changed under **Options → Controls → Key Binds → Inventor
 ## ⚙️ Configuration
 
 ### In-game settings
-Install [Mod Settings](https://modrinth.com/mod/mod-settings) to change settings from the **pause menu** (the **Mod Settings...** button, or press `F6`) - pick **InventoryWizard**. [Mod Menu](https://modrinth.com/mod/modmenu) works too. The screen covers the sorting mode, chat messages, sound on/off and volume, the update check, which containers can be sorted, and partial stack placement. Changes apply immediately and are saved when you press **Done**.
+Install [Mod Settings](https://modrinth.com/mod/mod-settings) to change settings from the **pause menu** (the **Mod Settings...** button, or press `F6`) - pick **InventoryWizard**. [Mod Menu](https://modrinth.com/mod/modmenu) works too. The screen covers the sorting mode, chat messages, sound on/off and volume, the update check, which containers can be sorted, and partial stack placement. On NeoForge and Forge, open it from **Mods → InventoryWizard → Config**. Changes apply immediately and are saved when you press **Done**.
 
 The sound id/pitch and hotbar priorities can only be changed in the JSON file.
 
@@ -124,7 +138,7 @@ The mod generates `config/inventorywizard.json`:
 ```
 
 #### Update Check
-- With `checkForUpdates` on, the mod asks [Modrinth](https://modrinth.com/mod/inventorywizard) at startup for the newest Fabric/Quilt release for your Minecraft version. If it is newer than yours, you get one chat message with a download link when you join a world.
+- With `checkForUpdates` on, the mod asks [Modrinth](https://modrinth.com/mod/inventorywizard) at startup for the newest release for your loader and Minecraft version. If it is newer than yours, you get one chat message with a download link when you join a world.
 - Set it to `false` to turn off the request entirely (takes effect after a restart).
 
 #### Partial Stack Sorting Behavior
@@ -176,16 +190,38 @@ git checkout fabric
 # Build with Gradle (needs a Java 25 JDK)
 ./gradlew build
 
-# The JAR will be in build/libs/InventoryWizard-x.x.x.jar
+# The JARs will be in fabric/build/libs/InventoryWizard-fabric-x.x.x.jar,
+# neoforge/build/libs/InventoryWizard-neoforge-x.x.x.jar
+# and forge/build/libs/InventoryWizard-forge-x.x.x.jar
 
 # Launch a development client
-./gradlew runClient
+./gradlew :fabric:runClient
+./gradlew :neoforge:runClient
+./gradlew :forge:runClient
+
+# Run the client gametests: each starts a fresh game, sorts with simulated
+# clicks and key presses, checks the results and exits with pass/fail
+./gradlew :fabric:runClientGameTest
+./gradlew :fabric:runClientGameTest -Ploader=quilt
+./gradlew :neoforge:runClientGameTest
+./gradlew :forge:runClientGameTest
 ```
+
+### Project Layout
+- `common/` - the sorting logic, config, settings screen and mixins, written against vanilla Minecraft only
+  - `common/src/gametest/` - the client gametests for NeoForge and Forge, which have no client gametest API of their own; they are only loaded by `runClientGameTest`, never shipped in a jar
+- `fabric/` - Fabric/Quilt entrypoint, Mod Menu integration and client gametests
+- `neoforge/` - NeoForge entrypoint
+- `forge/` - Forge entrypoint
+
+Anything that needs the mod loader goes through `com.inventorywizard.platform.Platform`, which each loader implements.
 
 ### Development Requirements
 - Java 25+
 - Gradle 9.6+ (wrapper included)
 - Fabric Loom 1.18, Fabric API 0.163.0+26.3
+- ModDevGradle 2.0, NeoForge 26.3.0.95
+- ForgeGradle 7, Forge 26.3-66.0.13
 
 ## 🤝 Contributing
 
@@ -204,6 +240,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 🙏 Acknowledgments
 
 - **FabricMC Team** for Fabric Loader, Loom and Fabric API
+- **NeoForged Team** for NeoForge and ModDevGradle
+- **MinecraftForge Team** for Forge and ForgeGradle
 - **PaperMC Team** for the server software the original plugin was built on
 - **Minecraft Community** for inspiration and feedback
 - **Mod and plugin developers** who paved the way

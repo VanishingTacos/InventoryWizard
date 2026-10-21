@@ -1,0 +1,19 @@
+# Dev-only: makes the gametest classes (common/src/gametest, compiled into the test source set)
+# load as a mod next to InventoryWizard. Forge loads a classes folder without a mods.toml as a
+# plain library on the boot class loader, where it cannot link against the mod.
+modLoader = "lowcodefml"
+loaderVersion = "[66,)"
+license = "MIT"
+
+[[mods]]
+modId = "inventorywizard_gametest"
+version = "1.0.0"
+displayName = "InventoryWizard Tests"
+description = '''Client gametests for InventoryWizard.'''
+
+[[dependencies.inventorywizard_gametest]]
+modId = "inventorywizard"
+mandatory = true
+versionRange = "*"
+ordering = "AFTER"
+side = "CLIENT"

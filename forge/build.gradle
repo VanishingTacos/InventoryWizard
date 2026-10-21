@@ -1,0 +1,57 @@
+plugins {
+	id 'inventorywizard-clientgametest'
+	id 'net.minecraftforge.gradle'
+}
+
+// ForgeGradle only makes per-source-set runs for main and test, so the gametests go in test
+useCommonGametests(sourceSets.test)
+// ...which then holds in-game tests only, nothing for Gradle's unit test task to run
+tasks.named('test') {
+	enabled = false
+}
+
+minecraft {
+	runs {
+		configureEach {
+			workingDir = rootProject.layout.projectDirectory.dir('run/forge')
+			// Forge only picks up mixin configs from the jar manifest, which dev runs don't have
+			args "--mixin.config=${project.mod_id}.mixins.json"
+		}
+
+		register('client') {
+			// The test source set's run (runTestClient): common/src/gametest in a fresh game.
+			// src/test/resources/META-INF/mods.toml makes the test classes load as a mod.
+			with(sourceSets.test) {
+				workingDir = gameTestRunDir
+				systemProperty 'inventorywizard.clientGameTest', 'true'
+			}
+		}
+	}
+}
+
+repositories {
+	minecraft.mavenizer(it)
+	maven fg.forgeMaven
+	maven fg.minecraftLibsMaven
+	mavenCentral()
+}
+
+dependencies {
+	implementation minecraft.dependency("net.minecraftforge:forge:${project.forge_version}")
+}
+
+tasks.named('jar', Jar) {
+	manifest {
+		attributes['MixinConfigs'] = "${project.mod_id}.mixins.json"
+	}
+}
+
+// ForgeGradle creates runTestClient late; expose it under the same task name as on Fabric and NeoForge
+tasks.matching { it.name == 'runTestClient' }.configureEach {
+	mustRunAfter(cleanGameTestRun)
+}
+tasks.register('runClientGameTest') {
+	group = 'minecraftforge'
+	description = 'Runs the InventoryWizard client gametests in a fresh game.'
+	dependsOn(cleanGameTestRun, 'runTestClient')
+}

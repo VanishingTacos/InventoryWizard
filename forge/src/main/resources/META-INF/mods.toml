@@ -1,0 +1,28 @@
+modLoader = "javafml"
+loaderVersion = "[66,)"
+license = "MIT"
+issueTrackerURL = "https://github.com/VanishingTacos/InventoryWizard/issues"
+clientSideOnly = true
+
+[[mods]]
+modId = "inventorywizard"
+version = "${version}"
+displayName = "InventoryWizard"
+displayURL = "https://github.com/VanishingTacos/InventoryWizard"
+logoFile = "assets/inventorywizard/icon.png"
+authors = "VanishingTacos"
+description = '''Magically sort chests, shulker boxes, barrels, ender chests, your inventory and hotbar with cycling sorting modes. Singleplayer (and LAN host) only.'''
+
+[[dependencies.inventorywizard]]
+modId = "forge"
+mandatory = true
+versionRange = "[66.0.13,)"
+ordering = "NONE"
+side = "CLIENT"
+
+[[dependencies.inventorywizard]]
+modId = "minecraft"
+mandatory = true
+versionRange = "[${minecraft_version},26.4)"
+ordering = "NONE"
+side = "CLIENT"
