@@ -217,10 +217,9 @@ Every permission defaults to `true` except `inventorywizard.admin` (op only), wh
 ## 🔧 Building from Source
 
 ```bash
-# Clone the repository and switch to the multi-loader branch
+# Clone the repository
 git clone https://github.com/VanishingTacos/inventorywizard.git
 cd inventorywizard
-git checkout multiloader
 
 # Build with Gradle (needs a Java 25 JDK)
 ./gradlew build
