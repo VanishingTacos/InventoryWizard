@@ -1,0 +1,49 @@
+# InventoryWizard Configuration
+# The magical sorting assistant for your Minecraft world! ✨
+
+settings:
+  # Play magical sound effects when sorting
+  play-sound: true
+  
+  # Sound settings for the wizard's magic
+  sound:
+    type: UI_BUTTON_CLICK
+    volume: 0.5
+    pitch: 1.2
+
+  # Sorting method: "TYPE" for smart categorization or "ALPHABETICAL" 
+  sort-method: "TYPE"
+
+# Enable/disable magical features
+features:
+  chest-sorting: true
+  shulker-sorting: true
+  barrel-sorting: true
+  enderchest-sorting: true
+  inventory-sorting: true
+  hotbar-sorting: true
+  
+  # Show magical messages when sorting
+  show-messages: true
+  
+  # Allow sorting of partial stacks in chests (set false to only sort full stacks)
+  allow-partial-stacks-chest: true
+  # Allow sorting of partial stacks in player inventory (set false to only sort full stacks)
+  allow-partial-stacks-inventory: true
+
+# Hotbar sorting priorities (optimized for PvP/survival wizardry)
+hotbar-priorities:
+  weapons: 100        # Swords, bows, crossbows first
+  tools: 200          # Pickaxes, axes, shovels second  
+  food: 300           # Sustenance third
+  building-blocks: 400 # Quick-build materials fourth
+  utility-items: 500  # Ender pearls, buckets, torches
+  other: 999          # Everything else
+
+# Wizard's wisdom: Messages shown to players
+messages:
+  chest-sorted: "§a✨ Chest magically sorted!"
+  inventory-sorted: "§a✨ Inventory organized with wizard magic!"
+  hotbar-sorted: "§6✨ Hotbar arranged by wizardry!"
+  all-sorted: "§b🧙✨ Complete inventory enchanted by the InventoryWizard!"
+  no-permission: "§c🧙✨ You lack the magical permission for this spell!"

@@ -1,0 +1,6 @@
+name: InventoryWizardTest
+version: test
+main: com.inventorywizard.test.InventoryWizardTestPlugin
+api-version: "26.3"
+description: Server-side gametests for InventoryWizard; stops the server when done
+depend: [InventoryWizard]

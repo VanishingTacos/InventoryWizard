@@ -1,0 +1,73 @@
+// Standalone PaperMC plugin: built against the Bukkit/Paper API, so it does not use :common
+plugins {
+	id 'inventorywizard-common'
+	id 'com.gradleup.shadow'
+	id 'xyz.jpenilla.run-paper'
+}
+
+repositories {
+	maven {
+		name = 'PaperMC'
+		url = 'https://repo.papermc.io/repository/maven-public/'
+	}
+	mavenCentral()
+}
+
+dependencies {
+	compileOnly "io.papermc.paper:paper-api:${project.paper_api_version}"
+	implementation "com.h2database:h2:${project.h2_version}"
+}
+
+// The shaded jar is the plugin; keep the thin one out of the way
+tasks.named('jar', Jar) {
+	archiveClassifier = 'plain'
+}
+
+tasks.named('shadowJar') {
+	archiveClassifier = ''
+	relocate 'org.h2', 'com.inventorywizard.libs.h2'
+	mergeServiceFiles()
+}
+
+tasks.named('assemble') {
+	dependsOn tasks.named('shadowJar')
+}
+
+tasks.named('runServer') {
+	minecraftVersion(project.minecraft_version)
+}
+
+// Server-side gametests: a second plugin that exercises InventoryWizard on a real Paper server, then stops it
+sourceSets {
+	gametest {
+		compileClasspath += main.output + main.compileClasspath
+	}
+}
+
+def gametestJar = tasks.register('gametestJar', Jar) {
+	archiveClassifier = 'gametest'
+	from sourceSets.gametest.output
+}
+
+tasks.register('runPaperTest', xyz.jpenilla.runpaper.task.RunServer) {
+	group = 'verification'
+	description = 'Runs the InventoryWizard gametests on a Paper test server.'
+	minecraftVersion(project.minecraft_version)
+	pluginJars(tasks.named('shadowJar').flatMap { it.archiveFile }, gametestJar.flatMap { it.archiveFile })
+	runDirectory = layout.projectDirectory.dir('run/gametest')
+	jvmArgs('-Dcom.mojang.eula.agree=true')
+
+	// The server exits cleanly either way, so read the verdict the test plugin leaves behind
+	def result = layout.projectDirectory.file('run/gametest/iwiz-test-result.txt').asFile
+	doFirst { result.delete() }
+	doLast {
+		if (!result.isFile()) {
+			throw new GradleException('Paper gametests never reported a result; check the server log')
+		}
+		def summary = result.text.trim()
+		if (!summary.endsWith(' 0 failed')) {
+			throw new GradleException("Paper gametests failed: ${summary}")
+		}
+		logger.lifecycle("Paper gametests: ${summary}")
+	}
+}

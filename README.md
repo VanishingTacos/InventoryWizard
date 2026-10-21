@@ -4,7 +4,7 @@
 
 InventoryWizard is a client-side mod for Fabric, Quilt, NeoForge and Forge that brings intelligent, one-click inventory organization to your singleplayer worlds. With intuitive controls and smart categorization, managing your items has never been easier!
 
-> Looking for the PaperMC server plugin? It lives on the [`main` branch](https://github.com/VanishingTacos/InventoryWizard/tree/main).
+> Running a server? There's also a **PaperMC plugin** that sorts for every player, no client mod needed - see [PaperMC Server Plugin](#-papermc-server-plugin).
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Minecraft](https://img.shields.io/badge/minecraft-26.3-green.svg)
@@ -12,6 +12,7 @@ InventoryWizard is a client-side mod for Fabric, Quilt, NeoForge and Forge that 
 ![Quilt](https://img.shields.io/badge/loader-Quilt-purple.svg)
 ![NeoForge](https://img.shields.io/badge/loader-NeoForge-red.svg)
 ![Forge](https://img.shields.io/badge/loader-Forge-lightgrey.svg)
+![Paper](https://img.shields.io/badge/server-Paper-blue.svg)
 
 ## 🌟 Features
 
@@ -179,20 +180,55 @@ Items are grouped by type first, then sorted by stack size within each type. Sta
 5. **Utility Items** - Ender pearls, buckets, torches
 6. **Other Items** - Miscellaneous
 
+## 🖥️ PaperMC Server Plugin
+
+The `paper/` subproject is a server-side plugin: players sort with Shift+Right Click and `/iwiz` without installing anything. It's a separate codebase from the mod (Bukkit API instead of vanilla classes), with its own permissions and config.
+
+### Installation
+1. **Download** the latest `InventoryWizard-paper-x.x.x.jar` from the [releases page](https://github.com/VanishingTacos/inventorywizard/releases)
+2. **Place** it in your server's `plugins` folder and restart
+3. **Configure** it in `plugins/InventoryWizard/config.yml` (optional)
+
+Requires **Paper 26.3** (or a compatible fork) and **Java 25+**. Player sorting modes are stored in an embedded H2 database (`plugins/InventoryWizard/player_data.mv.db`); no setup needed.
+
+### Controls
+| Action | Location | Permission | Result |
+|--------|----------|------------|--------|
+| **Shift+Right Click** | Hotbar (slots 0-8) | `inventorywizard.all` | Sort inventory + hotbar |
+| **Shift+Right Click** | Hotbar (slots 0-8) | `inventorywizard.hotbar` | Sort hotbar only |
+| **Shift+Right Click** | Hotbar Slot 4 | `inventorywizard.use` | Cycle sorting modes |
+| **Shift+Right Click** | Main Inventory (slots 9-35) | `inventorywizard.inventory` | Sort main inventory |
+| **Shift+Right Click** | Chest, barrel, shulker box, ender chest | `inventorywizard.chest` / `.barrel` / `.shulker` / `.enderchest` | Sort the container |
+| **Double Click** | Hotbar (slots 0-8) | `inventorywizard.hotbar` | Sort hotbar only |
+
+### Commands
+| Command | Aliases | Description | Permission |
+|---------|---------|-------------|------------|
+| `/iwiz` | `/inventorywizard`, `/sort` | Base command | `inventorywizard.inventory` |
+| `/iwiz hotbar` | `/iwiz hb` | Sort hotbar only | `inventorywizard.hotbar` |
+| `/iwiz inventory` | `/iwiz inv` | Sort inventory only | `inventorywizard.inventory` |
+| `/iwiz all` | `/iwiz both` | Sort everything | `inventorywizard.all` |
+
+### Permissions
+Every permission defaults to `true` except `inventorywizard.admin` (op only), which allows regenerating the database credentials.
+
+`inventorywizard.use`, `.chest`, `.shulker`, `.barrel`, `.enderchest`, `.inventory`, `.hotbar`, `.all`, `.admin`
+
 ## 🔧 Building from Source
 
 ```bash
-# Clone the repository and switch to the Fabric branch
+# Clone the repository and switch to the multi-loader branch
 git clone https://github.com/VanishingTacos/inventorywizard.git
 cd inventorywizard
-git checkout fabric
+git checkout multiloader
 
 # Build with Gradle (needs a Java 25 JDK)
 ./gradlew build
 
 # The JARs will be in fabric/build/libs/InventoryWizard-fabric-x.x.x.jar,
-# neoforge/build/libs/InventoryWizard-neoforge-x.x.x.jar
-# and forge/build/libs/InventoryWizard-forge-x.x.x.jar
+# neoforge/build/libs/InventoryWizard-neoforge-x.x.x.jar,
+# forge/build/libs/InventoryWizard-forge-x.x.x.jar
+# and paper/build/libs/InventoryWizard-paper-x.x.x.jar
 
 # Launch a development client
 ./gradlew :fabric:runClient
@@ -205,6 +241,13 @@ git checkout fabric
 ./gradlew :fabric:runClientGameTest -Ploader=quilt
 ./gradlew :neoforge:runClientGameTest
 ./gradlew :forge:runClientGameTest
+
+# Start a Paper 26.3 test server with the plugin installed (join it at localhost)
+./gradlew :paper:runServer
+
+# Run the Paper gametests: starts a fresh server, sorts real chests, barrels,
+# shulker boxes and ender chests, checks plugin setup, then stops with pass/fail
+./gradlew :paper:runPaperTest
 ```
 
 ### Project Layout
@@ -213,6 +256,8 @@ git checkout fabric
 - `fabric/` - Fabric/Quilt entrypoint, Mod Menu integration and client gametests
 - `neoforge/` - NeoForge entrypoint
 - `forge/` - Forge entrypoint
+- `paper/` - the PaperMC server plugin, a standalone project on the Paper API (it doesn't use `common/`)
+  - `paper/src/gametest/` - a test plugin that `runPaperTest` loads next to InventoryWizard; never shipped
 
 Anything that needs the mod loader goes through `com.inventorywizard.platform.Platform`, which each loader implements.
 
@@ -222,6 +267,7 @@ Anything that needs the mod loader goes through `com.inventorywizard.platform.Pl
 - Fabric Loom 1.18, Fabric API 0.163.0+26.3
 - ModDevGradle 2.0, NeoForge 26.3.0.95
 - ForgeGradle 7, Forge 26.3-66.0.13
+- Paper API 26.3, Shadow 9, run-paper 3
 
 ## 🤝 Contributing
 

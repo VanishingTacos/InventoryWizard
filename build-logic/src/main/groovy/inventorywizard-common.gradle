@@ -35,7 +35,7 @@ processResources {
 	def props = [version: project.version, minecraft_version: project.minecraft_version, neoforge_version: project.neoforge_version, forge_version: project.forge_version]
 	inputs.properties props
 
-	filesMatching(["fabric.mod.json", "META-INF/neoforge.mods.toml", "META-INF/mods.toml"]) {
+	filesMatching(["fabric.mod.json", "META-INF/neoforge.mods.toml", "META-INF/mods.toml", "plugin.yml"]) {
 		expand props
 	}
 }
