@@ -4,7 +4,7 @@
 
 InventoryWizard is a client-side mod for Fabric, Quilt, NeoForge and Forge that brings intelligent, one-click inventory organization to your singleplayer worlds. With intuitive controls and smart categorization, managing your items has never been easier!
 
-> Running a server? There's also a **PaperMC plugin** that sorts for every player, no client mod needed - see [PaperMC Server Plugin](#-papermc-server-plugin).
+> Running a server? There's also a **Paper/Spigot plugin** that sorts for every player, no client mod needed - see [PaperMC Server Plugin](#-papermc-server-plugin).
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Minecraft](https://img.shields.io/badge/minecraft-26.3-green.svg)
@@ -13,6 +13,7 @@ InventoryWizard is a client-side mod for Fabric, Quilt, NeoForge and Forge that 
 ![NeoForge](https://img.shields.io/badge/loader-NeoForge-red.svg)
 ![Forge](https://img.shields.io/badge/loader-Forge-lightgrey.svg)
 ![Paper](https://img.shields.io/badge/server-Paper-blue.svg)
+![Spigot](https://img.shields.io/badge/server-Spigot-orange.svg)
 
 ## 🌟 Features
 
@@ -189,7 +190,7 @@ The `paper/` subproject is a server-side plugin: players sort with Shift+Right C
 2. **Place** it in your server's `plugins` folder and restart
 3. **Configure** it in `plugins/InventoryWizard/config.yml` (optional)
 
-Requires **Paper 26.3** (or a compatible fork) and **Java 25+**. Player sorting modes are stored in an embedded H2 database (`plugins/InventoryWizard/player_data.mv.db`); no setup needed.
+Requires **Paper 26.3** or **Spigot 26.3** (or a compatible fork) and **Java 25+**; the same jar runs on both. Player sorting modes are stored in an embedded H2 database (`plugins/InventoryWizard/player_data.mv.db`); no setup needed.
 
 ### Controls
 | Action | Location | Permission | Result |

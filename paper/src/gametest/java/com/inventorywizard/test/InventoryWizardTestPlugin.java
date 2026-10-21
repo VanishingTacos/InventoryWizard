@@ -67,7 +67,8 @@ public class InventoryWizardTestPlugin extends JavaPlugin implements Listener {
         InventoryWizardPlugin wizard = (InventoryWizardPlugin) Bukkit.getPluginManager().getPlugin("InventoryWizard");
 
         test("plugin enabled", () -> wizard != null && wizard.isEnabled());
-        test("plugin version comes from gradle.properties", () -> !wizard.getPluginMeta().getVersion().contains("$"));
+        // getDescription() rather than Paper's getPluginMeta() so the tests also run on Spigot
+        test("plugin version comes from gradle.properties", () -> !wizard.getDescription().getVersion().contains("$"));
 
         test("iwiz command registered with aliases", () -> {
             PluginCommand command = Bukkit.getPluginCommand("iwiz");
