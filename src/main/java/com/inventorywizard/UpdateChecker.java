@@ -22,7 +22,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 
 /**
- * Asks Modrinth for the newest Fabric release built for the running Minecraft version and,
+ * Asks Modrinth for the newest Fabric/Quilt release built for the running Minecraft version and,
  * if it is newer than this jar, tells the player in chat once per session after they join a world.
  */
 public final class UpdateChecker {
@@ -43,7 +43,7 @@ public final class UpdateChecker {
         Version current = loader.getModContainer(InventoryWizardClient.MOD_ID).orElseThrow().getMetadata().getVersion();
         String minecraft = loader.getModContainer("minecraft").orElseThrow().getMetadata().getVersion().getFriendlyString();
 
-        String query = "loaders=" + encode("[\"fabric\"]") + "&game_versions=" + encode("[\"" + minecraft + "\"]");
+        String query = "loaders=" + encode("[\"fabric\",\"quilt\"]") + "&game_versions=" + encode("[\"" + minecraft + "\"]");
         HttpRequest request = HttpRequest.newBuilder(URI.create("https://api.modrinth.com/v2/project/" + PROJECT + "/version?" + query))
                 // Modrinth asks API clients to identify themselves
                 .header("User-Agent", "VanishingTacos/InventoryWizard/" + current.getFriendlyString() + " (github.com/VanishingTacos/InventoryWizard)")

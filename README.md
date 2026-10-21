@@ -2,13 +2,14 @@
 
 **The magical sorting assistant for your Minecraft world!** ✨
 
-InventoryWizard is a Fabric mod that brings intelligent, one-click inventory organization to your singleplayer worlds. With intuitive controls and smart categorization, managing your items has never been easier!
+InventoryWizard is a Fabric mod (that also runs on Quilt) that brings intelligent, one-click inventory organization to your singleplayer worlds. With intuitive controls and smart categorization, managing your items has never been easier!
 
 > Looking for the PaperMC server plugin? It lives on the [`main` branch](https://github.com/VanishingTacos/InventoryWizard/tree/main).
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Minecraft](https://img.shields.io/badge/minecraft-26.3-green.svg)
 ![Fabric](https://img.shields.io/badge/loader-Fabric-orange.svg)
+![Quilt](https://img.shields.io/badge/loader-Quilt-purple.svg)
 
 ## 🌟 Features
 
@@ -33,15 +34,15 @@ InventoryWizard is a Fabric mod that brings intelligent, one-click inventory org
 
 ## 📥 Installation
 
-1. **Install** [Fabric Loader](https://fabricmc.net/use/) 0.19.5+ for Minecraft 26.3
+1. **Install** [Fabric Loader](https://fabricmc.net/use/) 0.19.3+ (or [Quilt Loader](https://quiltmc.org/en/install/)) for Minecraft 26.3
 2. **Download** [Fabric API](https://modrinth.com/mod/fabric-api) for 26.3 and the latest `InventoryWizard-x.x.x.jar` from the [releases page](https://github.com/VanishingTacos/inventorywizard/releases)
 3. **Place** both JARs in your `.minecraft/mods` folder
 4. **Configure** the mod in-game with [Mod Settings](https://modrinth.com/mod/mod-settings) or [Mod Menu](https://modrinth.com/mod/modmenu), or by editing `config/inventorywizard.json` (optional)
 
 ### Requirements
 - **Minecraft**: 26.3
-- **Fabric Loader**: 0.19.5 or newer
-- **Fabric API**: 0.163.0+26.3 or newer
+- **Fabric Loader**: 0.19.3 or newer, or **Quilt Loader** 0.30.1 or newer
+- **Fabric API**: 0.163.0+26.3 or newer (on Quilt too, since Quilted Fabric API is retired)
 - **Java**: 25 or higher
 
 ### Singleplayer only
@@ -123,7 +124,7 @@ The mod generates `config/inventorywizard.json`:
 ```
 
 #### Update Check
-- With `checkForUpdates` on, the mod asks [Modrinth](https://modrinth.com/mod/inventorywizard) at startup for the newest Fabric release for your Minecraft version. If it is newer than yours, you get one chat message with a download link when you join a world.
+- With `checkForUpdates` on, the mod asks [Modrinth](https://modrinth.com/mod/inventorywizard) at startup for the newest Fabric/Quilt release for your Minecraft version. If it is newer than yours, you get one chat message with a download link when you join a world.
 - Set it to `false` to turn off the request entirely (takes effect after a restart).
 
 #### Partial Stack Sorting Behavior
