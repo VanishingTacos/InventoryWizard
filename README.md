@@ -49,6 +49,4 @@ If you enjoy InventoryWizard, you can buy me a coffee!
 
 ---
 
-<sub>Thanks to the FabricMC, NeoForged, MinecraftForge and PaperMC teams. 
-
-🤖 **AI disclosure:** Parts of this project, including code, tests and documentation, were written with the help of AI tools. All AI-assisted changes are reviewed by the maintainer.</sub>
+<sub>Thanks to the FabricMC, NeoForged, MinecraftForge and PaperMC teams. 🤖 **AI disclosure:** Parts of this project, including code, tests and documentation, were written with the help of AI tools. All AI-assisted changes are reviewed by the maintainer.</sub>
