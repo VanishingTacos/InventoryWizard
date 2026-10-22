@@ -316,6 +316,12 @@ public class InventoryWizardClientGameTest implements FabricClientGameTest {
                 boolean singleplayer = context.computeOnClient(client -> client.hasSingleplayerServer());
                 assertEquals("connected to a remote server", false, singleplayer);
                 assertEquals("sort key does nothing on a multiplayer server", before, inventoryRange(server, 9, 36));
+
+                // Shift+Right-click must reach the server: vanilla quick-moves the stone into the hotbar
+                hoverSlot(context, inventorySlot(20));
+                shiftRightClick(context);
+                assertEquals("shift+right-click passes through to the server", "-", inventoryRange(server, 20, 21).getFirst());
+                assertEquals("stone quick-moved to the hotbar", true, inventoryRange(server, 0, 9).contains("stone x10"));
                 closeScreen(context);
             }
         }

@@ -105,6 +105,11 @@ public final class InventoryWizard {
         if (event.button() != InputConstants.MOUSE_BUTTON_RIGHT || !event.hasShiftDown()) {
             return false;
         }
+        // On a remote server there is nothing to sort with here; let the click through so vanilla
+        // shift-clicking works and a server-side sorter (like the InventoryWizard Paper plugin) gets it
+        if (client.getSingleplayerServer() == null) {
+            return false;
+        }
         Slot slot = hoveredSlot(screen);
         AbstractContainerMenu menu = screen.getMenu();
         if (slot == null || !SortActions.isSortableSlot(menu, slot)) {
