@@ -79,8 +79,15 @@ public class DatabaseCredentials {
         String password = credentialsConfig.getString(PASSWORD_KEY);
         String salt = credentialsConfig.getString(SALT_KEY);
         
-        if (username == null || password == null || salt == null || 
-            username.isEmpty() || password.isEmpty() || salt.isEmpty()) {
+        // The salt isn't used to open the database, so a missing one is no reason to replace the
+        // username and password (which would lock the plugin out of an existing database)
+        if (salt == null || salt.isEmpty()) {
+            credentialsConfig.set(SALT_KEY, generateRandomString(16, 16));
+            save();
+        }
+        
+        if (username == null || password == null || 
+            username.isEmpty() || password.isEmpty()) {
             plugin.getLogger().warning("Invalid credentials found, generating new ones");
             generateNewCredentials();
         } else {
@@ -128,11 +135,34 @@ public class DatabaseCredentials {
     }
     
     /**
-     * Regenerate credentials (for security purposes)
+     * Generate a new random password without storing it
      */
-    public void regenerateCredentials() {
-        plugin.getLogger().info("Regenerating database credentials...");
-        generateNewCredentials();
+    public String generatePassword() {
+        return generateRandomString(16, 24);
+    }
+    
+    /**
+     * Store a new password, after it has been set on the database
+     * @return true if it was written to disk
+     */
+    public boolean savePassword(String password) {
+        String oldPassword = getPassword();
+        credentialsConfig.set(PASSWORD_KEY, password);
+        if (save()) {
+            return true;
+        }
+        credentialsConfig.set(PASSWORD_KEY, oldPassword);
+        return false;
+    }
+    
+    private boolean save() {
+        try {
+            credentialsConfig.save(credentialsFile);
+            return true;
+        } catch (IOException e) {
+            plugin.getLogger().log(Level.SEVERE, "Failed to save database credentials", e);
+            return false;
+        }
     }
     
     /**
