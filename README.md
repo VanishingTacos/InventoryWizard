@@ -16,9 +16,10 @@ A client-side mod for Fabric, Quilt, NeoForge and Forge that sorts your inventor
 [![Discord](https://img.shields.io/badge/discord-join-5865F2.svg?logo=discord&logoColor=white)](https://discord.gg/SeXCPAbu)
 
 ## ☕ Support
-Need help, found a bug or have an idea? Join the
-<a herf="https://discord.gg/6DS7N3Vmgk" target="_blank">
-  <img src="https://pngimg.com/d/discord_PNG19.png" alt="Support Discord" height="100">
+Need help, found a bug or have an idea? Join the Discord! 
+
+<a href="https://discord.gg/6DS7N3Vmgk" target="_blank">
+  <img src="https://pngimg.com/d/discord_PNG19.png" alt="Support Discord" width="150" >
 </a>
 
 ## Features
