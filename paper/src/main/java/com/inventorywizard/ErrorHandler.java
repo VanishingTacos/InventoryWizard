@@ -75,7 +75,7 @@ public class ErrorHandler {
         if (sortsUsed >= 10) {
             return "Rate limited! You've used all " + sortsUsed + " sorts this minute.";
         } else if (timeRemaining > 0) {
-            return "Rate limited! Please wait " + (timeRemaining / 1000) + " seconds before trying again.";
+            return "Rate limited! Please wait " + ((timeRemaining + 999) / 1000) + " seconds before trying again.";
         } else {
             return "Rate limited! Please wait a moment before trying again.";
         }

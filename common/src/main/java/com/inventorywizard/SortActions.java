@@ -139,7 +139,8 @@ public final class SortActions {
             Container container = menu.getSlot(slotIndex).container;
             ContainerKind kind = classify(container);
             if (kind == null) {
-                return null;
+                // The click was already cancelled on the client, so say why nothing happened
+                return new Feedback(Component.translatable("inventorywizard.message.unsupported_container"), 0f);
             }
             if (!kind.enabled(config.features)) {
                 return new Feedback(Component.translatable("inventorywizard.message.disabled"), 0f);

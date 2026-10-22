@@ -21,6 +21,10 @@ final class ItemCategories {
         return BuiltInRegistries.ITEM.getKey(stack.getItem()).getPath();
     }
 
+    static String namespace(ItemStack stack) {
+        return BuiltInRegistries.ITEM.getKey(stack.getItem()).getNamespace();
+    }
+
     static int hotbarPriority(ItemStack stack, InventoryWizardConfig.HotbarPriorities priorities) {
         if (isWeapon(stack)) return priorities.weapons;
         if (isTool(stack)) return priorities.tools;
@@ -31,10 +35,11 @@ final class ItemCategories {
     }
 
     static int inventoryPriority(ItemStack stack) {
+        // Ores first: deepslate and redstone ores would otherwise match the stone names
+        if (isOre(stack)) return 400;
         if (isStone(stack)) return 100;
         if (isEarth(stack)) return 200;
         if (isWood(stack)) return 300;
-        if (isOre(stack)) return 400;
         if (isBlock(stack)) return 500;
         if (isTool(stack)) return 600;
         if (isWeapon(stack)) return 700;
@@ -84,17 +89,23 @@ final class ItemCategories {
 
     private static boolean isQuickBuildBlock(ItemStack stack) {
         return isBlock(stack) && (stack.is(ItemTags.PLANKS) || stack.is(ItemTags.DIRT) || stack.is(ItemTags.SAND)
-                || stack.is(ItemTags.WOOL) || pathContains(stack, "stone", "gravel"));
+                || stack.is(ItemTags.WOOL) || (pathContains(stack, "stone", "gravel") && !isStoneLookalike(stack)));
     }
 
+    // Flint and steel and compasses count as tools, which are checked first
     private static boolean isUtilityItem(ItemStack stack) {
-        return stack.is(Items.ENDER_PEARL) || stack.is(Items.FLINT_AND_STEEL) || stack.is(Items.COMPASS)
-                || pathContains(stack, "bucket", "torch", "map");
+        return stack.is(Items.ENDER_PEARL) || pathContains(stack, "bucket", "torch", "map");
     }
 
     private static boolean isStone(ItemStack stack) {
         return isBlock(stack) && (stack.is(ItemTags.STONE_CRAFTING_MATERIALS) || stack.is(ItemTags.STONE_BRICKS)
-                || pathContains(stack, "stone", "granite", "diorite", "andesite", "basalt", "tuff", "deepslate"));
+                || (pathContains(stack, "stone", "granite", "diorite", "andesite", "basalt", "tuff", "deepslate")
+                        && !isStoneLookalike(stack)));
+    }
+
+    /** Names containing "stone" that aren't stone. */
+    private static boolean isStoneLookalike(ItemStack stack) {
+        return pathContains(stack, "redstone", "glowstone", "lodestone");
     }
 
     private static boolean isEarth(ItemStack stack) {

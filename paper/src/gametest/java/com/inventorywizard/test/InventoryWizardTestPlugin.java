@@ -9,21 +9,27 @@ import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.Container;
 import org.bukkit.command.PluginCommand;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.server.ServerLoadEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.sql.Connection;
+import java.sql.Driver;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.function.Supplier;
 
 /**
@@ -87,6 +93,20 @@ public class InventoryWizardTestPlugin extends JavaPlugin implements Listener {
                 && !classExists("org.h2.Driver", wizard));
         test("player data manager uses H2", () -> wizard.getPlayerDataManager().hasSecureCredentials());
 
+        test("regenerated credentials still open the database", () -> {
+            File credentialsFile = new File(data, "database-credentials.yml");
+            String oldPassword = YamlConfiguration.loadConfiguration(credentialsFile).getString("database.password");
+            if (!wizard.getPlayerDataManager().regenerateCredentials()) {
+                return false;
+            }
+            YamlConfiguration updated = YamlConfiguration.loadConfiguration(credentialsFile);
+            String user = updated.getString("database.username");
+            String newPassword = updated.getString("database.password");
+            return !newPassword.equals(oldPassword)
+                    && canOpenDatabase(wizard, user, newPassword)
+                    && !canOpenDatabase(wizard, user, oldPassword);
+        });
+
         test("sort modes cycle", () -> SortMode.DEFAULT.next() == SortMode.ALPHABETICAL
                 && SortMode.ALPHABETICAL.next() == SortMode.STACK_BASED
                 && SortMode.STACK_BASED.next() == SortMode.DEFAULT);
@@ -141,6 +161,51 @@ public class InventoryWizardTestPlugin extends JavaPlugin implements Listener {
             InventorySorter.sortInventory(inventory, SortMode.STACK_BASED);
             List<ItemStack> cobble = contents(inventory).stream().filter(i -> i.getType() == Material.COBBLESTONE).toList();
             return cobble.size() == 2 && cobble.get(0).getAmount() == 40 && cobble.get(1).getAmount() == 40;
+        });
+
+        test("partial stacks off keeps every item, leftovers last", () -> {
+            Inventory inventory = placeContainer(world, 14, Material.CHEST);
+            fill(inventory);
+            inventory.setItem(22, new ItemStack(Material.STONE, 64));
+            Map<Material, Integer> before = count(inventory);
+            InventorySorter.sortInventory(inventory, SortMode.DEFAULT, false);
+            List<ItemStack> items = contents(inventory);
+            // Full stacks (64 cobblestone, 64 stone, the sword) come before any partial stack
+            int firstPartial = 0;
+            while (firstPartial < items.size() && items.get(firstPartial).getAmount() == items.get(firstPartial).getMaxStackSize()) {
+                firstPartial++;
+            }
+            boolean partialsLast = items.subList(firstPartial, items.size()).stream()
+                    .allMatch(i -> i.getAmount() < i.getMaxStackSize());
+            return before.equals(count(inventory)) && partialsLast && items.stream().anyMatch(i -> i.getType() == Material.DIAMOND_SWORD);
+        });
+
+        test("items with different meta are not merged", () -> {
+            Inventory inventory = placeContainer(world, 16, Material.CHEST);
+            ItemStack named = new ItemStack(Material.DIAMOND, 10);
+            ItemMeta meta = named.getItemMeta();
+            meta.setDisplayName("Shiny");
+            named.setItemMeta(meta);
+            inventory.setItem(0, named);
+            inventory.setItem(5, new ItemStack(Material.DIAMOND, 10));
+            InventorySorter.sortInventory(inventory, SortMode.DEFAULT);
+            List<ItemStack> items = contents(inventory);
+            return items.size() == 2 && items.stream().filter(ItemStack::hasItemMeta)
+                    .filter(i -> i.getItemMeta().hasDisplayName()).count() == 1;
+        });
+
+        test("ores sort apart from stone, bowls not with weapons", () -> {
+            Inventory inventory = placeContainer(world, 18, Material.CHEST);
+            inventory.setItem(0, new ItemStack(Material.DEEPSLATE_IRON_ORE, 3));
+            inventory.setItem(1, new ItemStack(Material.STONE_PICKAXE));
+            inventory.setItem(2, new ItemStack(Material.COBBLESTONE, 3));
+            inventory.setItem(3, new ItemStack(Material.BOWL, 3));
+            inventory.setItem(4, new ItemStack(Material.IRON_SWORD));
+            InventorySorter.sortInventory(inventory, SortMode.DEFAULT);
+            List<Material> order = contents(inventory).stream().map(ItemStack::getType).toList();
+            // stone 100, ore 400, tools 600, weapons 700, misc 9999
+            return order.equals(List.of(Material.COBBLESTONE, Material.DEEPSLATE_IRON_ORE, Material.STONE_PICKAXE,
+                    Material.IRON_SWORD, Material.BOWL));
         });
 
         test("sorted chest persists in the world", () -> {
@@ -220,6 +285,25 @@ public class InventoryWizardTestPlugin extends JavaPlugin implements Listener {
             }
         }
         return true;
+    }
+
+    /** Opens a second connection to the plugin's H2 file, the way the next server start would. */
+    private static boolean canOpenDatabase(JavaPlugin plugin, String user, String password) {
+        try {
+            Driver driver = (Driver) Class.forName("com.inventorywizard.libs.h2.Driver", true, plugin.getClass().getClassLoader())
+                    .getDeclaredConstructor().newInstance();
+            Properties properties = new Properties();
+            properties.setProperty("user", user);
+            properties.setProperty("password", password);
+            String url = "jdbc:h2:" + new File(plugin.getDataFolder(), "player_data").getAbsolutePath();
+            try (Connection connection = driver.connect(url, properties)) {
+                return connection != null;
+            }
+        } catch (SQLException e) {
+            return false;
+        } catch (ReflectiveOperationException e) {
+            throw new IllegalStateException(e);
+        }
     }
 
     private static boolean classExists(String name, JavaPlugin plugin) {

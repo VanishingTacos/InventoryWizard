@@ -12,6 +12,11 @@ import java.util.List;
  */
 public final class InventorySorter {
 
+    /** By item name; the mod id only breaks ties, so the same item from two mods always lands in the same order. */
+    private static final Comparator<List<ItemStack>> BY_NAME =
+            Comparator.<List<ItemStack>, String>comparing(group -> ItemCategories.path(group.getFirst()))
+                    .thenComparing(group -> ItemCategories.namespace(group.getFirst()));
+
     private InventorySorter() {
     }
 
@@ -26,7 +31,7 @@ public final class InventorySorter {
 
         return switch (mode) {
             case ALPHABETICAL -> {
-                groups.sort(Comparator.comparing(group -> ItemCategories.path(group.getFirst())));
+                groups.sort(BY_NAME);
                 yield stack(groups, allowPartialStacks(region, config));
             }
             case STACK_BASED -> sortByStacks(groups);
@@ -34,7 +39,7 @@ public final class InventorySorter {
                 Comparator<List<ItemStack>> byCategory = region == Region.HOTBAR
                         ? Comparator.comparingInt(group -> ItemCategories.hotbarPriority(group.getFirst(), config.hotbarPriorities))
                         : Comparator.comparingInt(group -> ItemCategories.inventoryPriority(group.getFirst()));
-                groups.sort(byCategory.thenComparing(group -> ItemCategories.path(group.getFirst())));
+                groups.sort(byCategory.thenComparing(BY_NAME));
                 yield stack(groups, allowPartialStacks(region, config));
             }
         };
@@ -95,7 +100,7 @@ public final class InventorySorter {
 
     /** Groups by item name, keeps individual stack sizes, largest stacks first. */
     private static List<ItemStack> sortByStacks(List<List<ItemStack>> groups) {
-        groups.sort(Comparator.comparing(group -> ItemCategories.path(group.getFirst())));
+        groups.sort(BY_NAME);
         List<ItemStack> result = new ArrayList<>();
         for (List<ItemStack> group : groups) {
             group.stream()

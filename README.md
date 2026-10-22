@@ -200,12 +200,12 @@ Requires **Paper 26.3** or **Spigot 26.3** (or a compatible fork) and **Java 25+
 | **Shift+Right Click** | Hotbar Slot 4 | `inventorywizard.use` | Cycle sorting modes |
 | **Shift+Right Click** | Main Inventory (slots 9-35) | `inventorywizard.inventory` | Sort main inventory |
 | **Shift+Right Click** | Chest, barrel, shulker box, ender chest | `inventorywizard.chest` / `.barrel` / `.shulker` / `.enderchest` | Sort the container |
-| **Double Click** | Hotbar (slots 0-8) | `inventorywizard.hotbar` | Sort hotbar only |
+| **Double Click** | Empty hotbar slot, nothing on the cursor | `inventorywizard.hotbar` | Sort hotbar only |
 
 ### Commands
 | Command | Aliases | Description | Permission |
 |---------|---------|-------------|------------|
-| `/iwiz` | `/inventorywizard`, `/sort` | Base command | `inventorywizard.inventory` |
+| `/iwiz` | `/inventorywizard`, `/sort` | Sort inventory (same as `/iwiz inventory`) | `inventorywizard.use` to run the command; each subcommand checks its own permission |
 | `/iwiz hotbar` | `/iwiz hb` | Sort hotbar only | `inventorywizard.hotbar` |
 | `/iwiz inventory` | `/iwiz inv` | Sort inventory only | `inventorywizard.inventory` |
 | `/iwiz all` | `/iwiz both` | Sort everything | `inventorywizard.all` |

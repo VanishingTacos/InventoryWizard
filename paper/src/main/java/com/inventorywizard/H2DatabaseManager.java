@@ -25,6 +25,7 @@ public class H2DatabaseManager {
     
 
     
+    /** Throws when the database can't be opened, so {@link PlayerDataManager} falls back instead of hitting a null connection later. */
     private void initializeDatabase() {
         try {
             // Create database directory if it doesn't exist
@@ -59,12 +60,14 @@ public class H2DatabaseManager {
                 "H2 driver not found. Please ensure the plugin is properly built.",
                 e
             );
+            throw new IllegalStateException("H2 driver not found", e);
         } catch (SQLException e) {
             errorHandler.logError(
                 ErrorHandler.getDatabaseErrorMessage("initialization"),
                 "Failed to initialize H2 database",
                 e
             );
+            throw new IllegalStateException("Could not open the H2 database", e);
         }
     }
     
@@ -176,39 +179,19 @@ public class H2DatabaseManager {
         int modeId = validation.getModeId();
         long timestamp = validation.getTimestamp();
         
-        // Try INSERT first, if it fails due to duplicate key, use UPDATE
-        String insertSql = "INSERT INTO player_data (uuid, sort_mode, last_updated) VALUES (?, ?, ?)";
-        String updateSql = "UPDATE player_data SET sort_mode = ?, last_updated = ? WHERE uuid = ?";
-        
-        try (PreparedStatement insertStmt = connection.prepareStatement(insertSql)) {
-            insertStmt.setString(1, uuid);
-            insertStmt.setInt(2, modeId);
-            insertStmt.setLong(3, timestamp);
-            
-            insertStmt.executeUpdate();
-            
+        // MERGE ... KEY inserts or updates in one statement, leaving the other columns alone
+        String sql = "MERGE INTO player_data (uuid, sort_mode, last_updated) KEY (uuid) VALUES (?, ?, ?)";
+
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+            stmt.setString(1, uuid);
+            stmt.setInt(2, modeId);
+            stmt.setLong(3, timestamp);
+            stmt.executeUpdate();
         } catch (SQLException e) {
-            // If insert fails (duplicate key), try update
-            try (PreparedStatement updateStmt = connection.prepareStatement(updateSql)) {
-                updateStmt.setInt(1, modeId);
-                updateStmt.setLong(2, timestamp);
-                updateStmt.setString(3, uuid);
-                
-                updateStmt.executeUpdate();
-                
-            } catch (SQLException updateException) {
-                errorHandler.logDatabaseError("set sort mode", player.getName(), updateException);
-            }
+            errorHandler.logDatabaseError("set sort mode", player.getName(), e);
         }
     }
-    
-    public PlayerDataManager.SortMode cyclePlayerSortMode(Player player) {
-        PlayerDataManager.SortMode currentMode = getPlayerSortMode(player);
-        PlayerDataManager.SortMode nextMode = currentMode.next();
-        setPlayerSortMode(player, nextMode);
-        return nextMode;
-    }
-    
+
     public void close() {
         if (connection != null) {
             try {
@@ -225,12 +208,43 @@ public class H2DatabaseManager {
     }
     
     /**
-     * Regenerate database credentials for security purposes
+     * Regenerate the database password. The database itself is changed first and the new password is
+     * only saved once that worked; otherwise the next start would not be able to open the database.
+     * @return true if both the database and database-credentials.yml now hold the new password
      */
-    public void regenerateCredentials() {
-        if (credentials != null) {
-            credentials.regenerateCredentials();
-            plugin.getLogger().info("Database credentials regenerated successfully");
+    public boolean regenerateCredentials() {
+        if (connection == null || credentials == null) {
+            return false;
+        }
+        
+        String oldPassword = credentials.getPassword();
+        String newPassword = credentials.generatePassword();
+        try {
+            setDatabasePassword(newPassword);
+        } catch (SQLException e) {
+            errorHandler.logDatabaseError("regenerate credentials", "console", e);
+            return false;
+        }
+        
+        if (!credentials.savePassword(newPassword)) {
+            // Put the old password back so the database still matches the file
+            try {
+                setDatabasePassword(oldPassword);
+            } catch (SQLException e) {
+                plugin.getLogger().log(Level.SEVERE, "Could not restore the old database password; database-credentials.yml no longer matches the database", e);
+            }
+            return false;
+        }
+        
+        plugin.getLogger().info("Database credentials regenerated successfully");
+        return true;
+    }
+    
+    private void setDatabasePassword(String password) throws SQLException {
+        // H2 doesn't take parameters here; the user name comes from H2 itself and the password is generated alphanumerics
+        String user = connection.getMetaData().getUserName().replace("\"", "\"\"");
+        try (Statement stmt = connection.createStatement()) {
+            stmt.execute("ALTER USER \"" + user + "\" SET PASSWORD '" + password.replace("'", "''") + "'");
         }
     }
     
@@ -316,29 +330,15 @@ public class H2DatabaseManager {
         
         long timestamp = System.currentTimeMillis();
         
-        // try INSERT first, if it fails due to duplicate key, use UPDATE
-        String insertSql = "INSERT INTO player_data (uuid, rate_limit_enabled, last_updated) VALUES (?, ?, ?)";
-        String updateSql = "UPDATE player_data SET rate_limit_enabled = ?, last_updated = ? WHERE uuid = ?";
-        
-        try (PreparedStatement insertStmt = connection.prepareStatement(insertSql)) {
-            insertStmt.setString(1, uuid);
-            insertStmt.setBoolean(2, enabled);
-            insertStmt.setLong(3, timestamp);
-            
-            insertStmt.executeUpdate();
-            
+        String sql = "MERGE INTO player_data (uuid, rate_limit_enabled, last_updated) KEY (uuid) VALUES (?, ?, ?)";
+
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+            stmt.setString(1, uuid);
+            stmt.setBoolean(2, enabled);
+            stmt.setLong(3, timestamp);
+            stmt.executeUpdate();
         } catch (SQLException e) {
-            // if insert fails (duplicate key), try update
-            try (PreparedStatement updateStmt = connection.prepareStatement(updateSql)) {
-                updateStmt.setBoolean(1, enabled);
-                updateStmt.setLong(2, timestamp);
-                updateStmt.setString(3, uuid);
-                
-                updateStmt.executeUpdate();
-                
-            } catch (SQLException updateException) {
-                errorHandler.logDatabaseError("set rate limit enabled", player.getName(), updateException);
-            }
+            errorHandler.logDatabaseError("set rate limit enabled", player.getName(), e);
         }
     }
 

@@ -11,8 +11,7 @@ settings:
     volume: 0.5
     pitch: 1.2
 
-  # Sorting method: "TYPE" for smart categorization or "ALPHABETICAL" 
-  sort-method: "TYPE"
+  # Each player picks their sorting mode with Shift+Right-click on hotbar slot 5
 
 # Enable/disable magical features
 features:
@@ -26,9 +25,9 @@ features:
   # Show magical messages when sorting
   show-messages: true
   
-  # Allow sorting of partial stacks in chests (set false to only sort full stacks)
+  # Sort partial stacks in with their item in containers (set false to put them after all full stacks)
   allow-partial-stacks-chest: true
-  # Allow sorting of partial stacks in player inventory (set false to only sort full stacks)
+  # Sort partial stacks in with their item in the player inventory (set false to put them after all full stacks)
   allow-partial-stacks-inventory: true
 
 # Hotbar sorting priorities (optimized for PvP/survival wizardry)
@@ -39,11 +38,3 @@ hotbar-priorities:
   building-blocks: 400 # Quick-build materials fourth
   utility-items: 500  # Ender pearls, buckets, torches
   other: 999          # Everything else
-
-# Wizard's wisdom: Messages shown to players
-messages:
-  chest-sorted: "§a✨ Chest magically sorted!"
-  inventory-sorted: "§a✨ Inventory organized with wizard magic!"
-  hotbar-sorted: "§6✨ Hotbar arranged by wizardry!"
-  all-sorted: "§b🧙✨ Complete inventory enchanted by the InventoryWizard!"
-  no-permission: "§c🧙✨ You lack the magical permission for this spell!"

@@ -18,6 +18,7 @@
 	"inventorywizard.message.all_sorted": "🧙✨ Complete inventory enchanted by the InventoryWizard! (%s)",
 	"inventorywizard.message.mode_changed": "🔄 Sorting mode changed to: %s",
 	"inventorywizard.message.disabled": "That kind of sorting is turned off in the InventoryWizard config.",
+	"inventorywizard.message.unsupported_container": "InventoryWizard can't sort this container.",
 	"inventorywizard.message.singleplayer_only": "InventoryWizard only works in singleplayer worlds (or as the LAN host).",
 	"inventorywizard.update.available": "🧙 InventoryWizard %s is available! %s",
 	"inventorywizard.update.download": "[Download]",

@@ -40,5 +40,6 @@ commands:
   iwiz:
     description: Access InventoryWizard sorting commands
     usage: /iwiz [hotbar|inventory|all]
-    permission: inventorywizard.inventory
+    # Each subcommand checks its own permission, so hotbar-only players can still run /iwiz hotbar
+    permission: inventorywizard.use
     aliases: [inventorywizard, sort]

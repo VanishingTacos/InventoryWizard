@@ -14,11 +14,13 @@ public class RateLimiter {
     
     private final Map<UUID, Long> lastSortTime = new ConcurrentHashMap<>();
     private final Map<UUID, Integer> sortCount = new ConcurrentHashMap<>();
+    private final Map<UUID, Long> windowStart = new ConcurrentHashMap<>();
     
     private final PlayerDataManager playerDataManager;
     
     // Configuration
-    private static final long MIN_SORT_INTERVAL_MS = 10000; // 10 seconds between sorts
+    // Short enough that MAX_SORTS_PER_MINUTE is reachable; at 10 seconds it could never trigger
+    private static final long MIN_SORT_INTERVAL_MS = 1000; // 1 second between sorts
     private static final int MAX_SORTS_PER_MINUTE = 10; // Max 10 sorts per minute
     private static final long RESET_INTERVAL_MS = 60000; // Reset counter every minute
     private static final long MAX_SORT_DURATION_MS = 5000; // Max 5 seconds per sort operation
@@ -54,18 +56,9 @@ public class RateLimiter {
         }
         
         // Check sort count per minute
+        resetWindowIfExpired(playerId, currentTime);
         Integer count = sortCount.get(playerId);
-        if (count != null && count >= MAX_SORTS_PER_MINUTE) {
-            // Check if we should reset the counter (if more than a minute has passed)
-            if (lastSort != null && (currentTime - lastSort) > RESET_INTERVAL_MS) {
-                // Reset the counter for the new minute
-                sortCount.put(playerId, 0);
-                return true;
-            }
-            return false;
-        }
-        
-        return true;
+        return count == null || count < MAX_SORTS_PER_MINUTE;
     }
     
     /**
@@ -83,16 +76,22 @@ public class RateLimiter {
         // Update last sort time
         lastSortTime.put(playerId, currentTime);
         
-        // Update sort count
-        Integer count = sortCount.get(playerId);
-        if (count == null) {
-            sortCount.put(playerId, 1);
-        } else {
-            sortCount.put(playerId, count + 1);
-        }
+        // Update sort count for the current minute
+        resetWindowIfExpired(playerId, currentTime);
+        windowStart.putIfAbsent(playerId, currentTime);
+        sortCount.merge(playerId, 1, Integer::sum);
         
         // Clean up old entries to prevent memory leaks
         cleanupOldEntries(currentTime);
+    }
+    
+    /** Starts a fresh minute once the current one is over, so the count doesn't build up across minutes. */
+    private void resetWindowIfExpired(UUID playerId, long currentTime) {
+        Long start = windowStart.get(playerId);
+        if (start != null && currentTime - start >= RESET_INTERVAL_MS) {
+            windowStart.remove(playerId);
+            sortCount.remove(playerId);
+        }
     }
     
     /**
@@ -109,6 +108,7 @@ public class RateLimiter {
             Long lastSort = lastSortTime.get(playerId);
             return lastSort == null || lastSort < cutoffTime;
         });
+        windowStart.entrySet().removeIf(entry -> !sortCount.containsKey(entry.getKey()));
     }
     
     /**
@@ -182,6 +182,7 @@ public class RateLimiter {
         UUID playerId = player.getUniqueId();
         lastSortTime.remove(playerId);
         sortCount.remove(playerId);
+        windowStart.remove(playerId);
     }
     
     /**
