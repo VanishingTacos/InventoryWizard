@@ -1,0 +1,141 @@
+# Builds the Fabric, NeoForge, Forge and Paper jars on every push and PR.
+# Pushes to main also (re)create a draft release named after `version` in gradle.properties,
+# with release notes made from the conventional commits since the previous release tag.
+name: Build & Draft Release
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Existing tags are V1.0.0 ... V2.0.2
+  TAG_PREFIX: V
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 25
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Read version
+        id: version
+        run: echo "version=$(grep -E '^version=' gradle.properties | cut -d= -f2 | tr -d '[:space:]')" >> "$GITHUB_OUTPUT"
+
+      - name: Build
+        run: |
+          chmod +x gradlew
+          ./gradlew build --stacktrace
+
+      # Only the jars players install: no -sources jars, and not Paper's unshaded -plain jar
+      - name: Collect jars
+        run: |
+          mkdir -p dist
+          for loader in fabric neoforge forge paper; do
+            cp "$loader/build/libs/InventoryWizard-$loader-${{ steps.version.outputs.version }}.jar" dist/
+          done
+          ls -l dist
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: InventoryWizard-${{ steps.version.outputs.version }}
+          path: dist/*.jar
+          if-no-files-found: error
+
+  release:
+    needs: build
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      VERSION: ${{ needs.build.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: InventoryWizard-${{ needs.build.outputs.version }}
+          path: dist
+
+      - name: Check for an existing release
+        id: existing
+        run: |
+          tag="$TAG_PREFIX$VERSION"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          draft=$(gh release view "$tag" --json isDraft --jq .isDraft 2>/dev/null || echo none)
+          if [ "$draft" = "false" ]; then
+            echo "::notice::$tag is already published; bump version in gradle.properties to draft a new release"
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          elif [ "$draft" = "true" ]; then
+            # Replace the old draft so its jars and notes match this commit
+            gh release delete "$tag" --yes
+          fi
+
+      - name: Write release notes
+        if: steps.existing.outputs.skip != 'true'
+        env:
+          TAG: ${{ steps.existing.outputs.tag }}
+        run: |
+          # Highest version tag already in history (several old tags share one commit, so not git describe)
+          prev=$(git tag --merged HEAD --list "$TAG_PREFIX*" --sort=-v:refname | grep -vxF "$TAG" | head -n1 || true)
+          range=${prev:+$prev..}HEAD
+
+          # "type(scope): message" -> "**scope:** message (sha)", grouped by type
+          section() {
+            local title=$1 pattern=$2
+            local lines
+            lines=$(git log --no-merges --format='%h %s' "$range" \
+              | grep -E "^[0-9a-f]+ ($pattern)(\([^)]*\))?!?: " \
+              | grep -vE '^[0-9a-f]+ chore(\([^)]*\))?: update version' \
+              | sed -E 's/^([0-9a-f]+) [a-z]+\(([^)]*)\)!?: (.*)$/- **\2:** \3 (\1)/; s/^([0-9a-f]+) [a-z]+!?: (.*)$/- \2 (\1)/' || true)
+            if [ -n "$lines" ]; then
+              printf '## %s\n\n%s\n\n' "$title" "$lines"
+            fi
+          }
+
+          {
+            section 'Features' 'feat'
+            section 'Fixes' 'fix'
+            section 'Performance' 'perf'
+            section 'Other changes' 'refactor|docs|test|build|ci|chore|style'
+            echo '## Downloads'
+            echo
+            echo "- **Fabric / Quilt:** \`InventoryWizard-fabric-$VERSION.jar\`"
+            echo "- **NeoForge:** \`InventoryWizard-neoforge-$VERSION.jar\`"
+            echo "- **Forge:** \`InventoryWizard-forge-$VERSION.jar\`"
+            echo "- **Paper / Spigot:** \`InventoryWizard-paper-$VERSION.jar\`"
+            if [ -n "$prev" ]; then
+              echo
+              echo "**Full changelog:** https://github.com/$GITHUB_REPOSITORY/compare/$prev...$TAG"
+            fi
+          } > notes.md
+          cat notes.md
+
+      - name: Create draft release
+        if: steps.existing.outputs.skip != 'true'
+        env:
+          TAG: ${{ steps.existing.outputs.tag }}
+        run: |
+          gh release create "$TAG" dist/*.jar \
+            --draft \
+            --title "$TAG" \
+            --target "$GITHUB_SHA" \
+            --notes-file notes.md
