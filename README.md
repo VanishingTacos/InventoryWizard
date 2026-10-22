@@ -4,6 +4,7 @@
 
 A client-side mod for Fabric, Quilt, NeoForge and Forge that sorts your inventory, hotbar and containers in singleplayer, plus a Paper/Spigot plugin that does the same for every player on a server.
 
+![Downloads](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/VanishingTacos/InventoryWizard/badges/downloads.json)
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Minecraft](https://img.shields.io/badge/minecraft-26.3-green.svg)
 ![Fabric](https://img.shields.io/badge/loader-Fabric-orange.svg)

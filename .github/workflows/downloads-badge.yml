@@ -1,0 +1,55 @@
+# Sums the download counts from Modrinth, CurseForge and Hangar and publishes them as a
+# shields.io endpoint JSON on the `badges` branch, so the README badge shows the combined total.
+name: Update Downloads Badge
+
+on:
+  schedule:
+    - cron: '0 */6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: true
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fetch download counts
+        id: count
+        run: |
+          set -euo pipefail
+          modrinth=$(curl -fsS https://api.modrinth.com/v2/project/inventorywizard | jq '.downloads')
+          # The official CurseForge API needs a key; cfwidget proxies the public numbers
+          curseforge=$(curl -fsS https://api.cfwidget.com/1752626 | jq '.downloads.total')
+          hangar=$(curl -fsS https://hangar.papermc.io/api/v1/projects/InventoryWizard | jq '.stats.downloads')
+          total=$((modrinth + curseforge + hangar))
+          echo "Modrinth=$modrinth CurseForge=$curseforge Hangar=$hangar Total=$total"
+          echo "total=$total" >> "$GITHUB_OUTPUT"
+
+      - name: Write badge JSON
+        env:
+          TOTAL: ${{ steps.count.outputs.total }}
+        run: |
+          mkdir -p out
+          message=$(awk -v n="$TOTAL" 'BEGIN {
+            if (n >= 1000000) printf "%.1fM", n / 1000000
+            else if (n >= 1000) printf "%.1fk", n / 1000
+            else printf "%d", n
+          }' | sed 's/\.0\([kM]\)/\1/')
+          jq -n --arg m "$message" \
+            '{schemaVersion: 1, label: "downloads", message: $m, color: "brightgreen"}' > out/downloads.json
+          cat out/downloads.json
+
+      - name: Publish to badges branch
+        run: |
+          cd out
+          git init -q -b badges
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add downloads.json
+          git commit -qm "Update downloads badge"
+          git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" badges
