@@ -12,6 +12,13 @@ A client-side mod for Fabric, Quilt, NeoForge and Forge that sorts your inventor
 ![Forge](https://img.shields.io/badge/loader-Forge-lightgrey.svg)
 ![Paper](https://img.shields.io/badge/server-Paper-blue.svg)
 ![Spigot](https://img.shields.io/badge/server-Spigot-orange.svg)
+[![Discord](https://img.shields.io/badge/discord-join-5865F2.svg?logo=discord&logoColor=white)](https://discord.gg/SeXCPAbu)
+
+## ☕ Support
+Need help, found a bug or have an idea? Join the
+<a herf="https://discord.gg/6DS7N3Vmgk" target="_blank">
+  <img src="https://pngimg.com/d/discord_PNG19.png" alt="Support Discord" height="100">
+</a>
 
 ## Features
 - **Smart sorting** by category (blocks, tools, weapons, food, ...), including modded items
@@ -40,7 +47,6 @@ Everything else lives in the **[Wiki](https://github.com/VanishingTacos/Inventor
 ## 📄 License
 MIT - see [LICENSE](LICENSE).
 
-## ☕ Support
 If you enjoy InventoryWizard, you can buy me a coffee!
 
 <a href="https://buymeacoffee.com/vanishingtacos" target="_blank">
