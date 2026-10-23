@@ -13,9 +13,11 @@ import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.gui.screens.inventory.CreativeModeInventoryScreen;
+//? if >=1.21.9 {
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.resources.Identifier;
+//?}
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.ChestMenu;
@@ -36,8 +38,11 @@ public final class InventoryWizard {
     /** Shift+Right-click on this hotbar slot cycles the sort mode instead of sorting. */
     private static final int CYCLE_MODE_HOTBAR_SLOT = 4;
 
+    //? if >=1.21.9 {
     public static final KeyMapping.Category CATEGORY =
             Platform.INSTANCE.keyMappingCategory(Identifier.fromNamespaceAndPath(MOD_ID, "main"));
+    //?} else
+    //public static final String CATEGORY = "key.category." + MOD_ID + ".main";
     public static final KeyMapping SORT_KEY =
             new KeyMapping("key.inventorywizard.sort", InputConstants.KEY_R, CATEGORY);
     public static final KeyMapping CYCLE_MODE_KEY =
@@ -101,10 +106,17 @@ public final class InventoryWizard {
     }
 
     /** Returns true when the click was used for sorting and vanilla handling should be cancelled. */
+    //? if >=1.21.9 {
     public static boolean onMouseClick(Minecraft client, AbstractContainerScreen<?> screen, MouseButtonEvent event) {
         if (event.button() != InputConstants.MOUSE_BUTTON_RIGHT || !event.hasShiftDown()) {
             return false;
         }
+    //?} else {
+    /*public static boolean onMouseClick(Minecraft client, AbstractContainerScreen<?> screen, int button) {
+        if (button != InputConstants.MOUSE_BUTTON_RIGHT || !Screen.hasShiftDown()) {
+            return false;
+        }
+    *///?}
         // On a remote server there is nothing to sort with here; let the click through so vanilla
         // shift-clicking works and a server-side sorter (like the InventoryWizard Paper plugin) gets it
         if (client.getSingleplayerServer() == null) {
@@ -125,12 +137,18 @@ public final class InventoryWizard {
     }
 
     /** Returns true when the key press was used and vanilla handling should be cancelled. */
+    //? if >=1.21.9 {
     public static boolean onKeyPress(Minecraft client, AbstractContainerScreen<?> screen, KeyEvent event) {
+    //?} else
+    //public static boolean onKeyPress(Minecraft client, AbstractContainerScreen<?> screen, int keyCode, int scanCode) {
         if (isTyping(screen)) {
             return false;
         }
 
+        //? if >=1.21.9 {
         if (SORT_KEY.matches(event)) {
+        //?} else
+        //if (SORT_KEY.matches(keyCode, scanCode)) {
             AbstractContainerMenu menu = screen.getMenu();
             Slot slot = hoveredSlot(screen);
             if (slot != null && SortActions.isSortableSlot(menu, slot)) {
@@ -146,7 +164,10 @@ public final class InventoryWizard {
             }
             return true;
         }
+        //? if >=1.21.9 {
         if (CYCLE_MODE_KEY.matches(event)) {
+        //?} else
+        //if (CYCLE_MODE_KEY.matches(keyCode, scanCode)) {
             SortActions.cycleSortMode(client);
             return true;
         }

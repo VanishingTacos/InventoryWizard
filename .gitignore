@@ -2,6 +2,8 @@
 
 .gradle/
 build/
+# Built jars (versions/<mc>-<loader>/)
+versions/
 out/
 classes/
 

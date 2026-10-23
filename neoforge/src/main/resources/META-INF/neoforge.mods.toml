@@ -25,6 +25,6 @@ side = "CLIENT"
 [[dependencies.inventorywizard]]
 modId = "minecraft"
 type = "required"
-versionRange = "[${minecraft_version},26.4)"
+versionRange = "${mods_toml_minecraft_range}"
 ordering = "NONE"
 side = "CLIENT"

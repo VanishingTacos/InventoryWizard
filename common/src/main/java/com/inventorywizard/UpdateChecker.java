@@ -105,10 +105,18 @@ public final class UpdateChecker {
                 .withStyle(style -> style
                         .withColor(ChatFormatting.AQUA)
                         .withUnderlined(true)
+                        //? if >=1.21.5 {
                         .withClickEvent(new ClickEvent.OpenUrl(update.page()))
                         .withHoverEvent(new HoverEvent.ShowText(Component.literal(update.page().toString()))));
-        client.player.sendSystemMessage(
-                Component.translatable("inventorywizard.update.available", update.version(), link).withStyle(ChatFormatting.GOLD));
+                        //?} else {
+                        /*.withClickEvent(new ClickEvent(ClickEvent.Action.OPEN_URL, update.page().toString()))
+                        .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Component.literal(update.page().toString()))));
+                        *///?}
+        Component message = Component.translatable("inventorywizard.update.available", update.version(), link).withStyle(ChatFormatting.GOLD);
+        //? if >=26.1 {
+        client.player.sendSystemMessage(message);
+        //?} else
+        //client.player.displayClientMessage(message, false);
     }
 
     /**

@@ -1,0 +1,20 @@
+plugins {
+	id 'dev.kikugie.stonecutter'
+	id 'net.fabricmc.fabric-loom' version "${loom_version}" apply false
+	id 'net.fabricmc.fabric-loom-remap' version "${loom_version}" apply false
+	id 'net.neoforged.moddev' version "${moddev_version}" apply false
+	id 'net.minecraftforge.gradle' version "${forgegradle_version}" apply false
+	id 'com.gradleup.shadow' version "${shadow_version}" apply false
+	id 'xyz.jpenilla.run-paper' version "${run_paper_version}" apply false
+}
+
+// The Minecraft version the sources are switched to; keep it on the latest when committing
+stonecutter.active "26.3"
+
+stonecutter.parameters {
+	// Mojang renamed ResourceLocation to Identifier in 1.21.11; the sources use the new name
+	replacements.string(eval(current.version, '>=1.21.11')) {
+		from = 'ResourceLocation'
+		to = 'Identifier'
+	}
+}

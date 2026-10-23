@@ -20,8 +20,28 @@ pluginManagement {
 // Lets Gradle download the JDKs ModDevGradle and ForgeGradle tools ask for (e.g. Java 21 for downloadAssets)
 plugins {
 	id 'org.gradle.toolchains.foojay-resolver-convention' version '1.0.0'
+	id 'dev.kikugie.stonecutter' version '0.9.8'
 }
 
 rootProject.name = 'InventoryWizard'
 includeBuild('build-logic')
-include('common', 'fabric', 'neoforge', 'forge', 'paper')
+
+// Every Minecraft version the mod is built for, oldest first. Each one has a props/<mc>.properties
+// with its dependency versions; the source is kept on the latest (vcsVersion) in git.
+def minecraftVersions = ['1.21.1', '1.21.3', '1.21.4', '1.21.5', '1.21.8', '1.21.10', '1.21.11', '26.1.2', '26.2', '26.3']
+
+// common, fabric, neoforge and forge are Stonecutter branches: <branch>/versions/<mc> is one project
+// per Minecraft version, built by <branch>/build.gradle from the shared <branch>/src
+stonecutter {
+	kotlinController = false
+	centralScript = 'build.gradle'
+	create(rootProject) {
+		vcsVersion = '26.3'
+		['common', 'fabric', 'neoforge', 'forge'].each { loader ->
+			branch(loader) { versions(*minecraftVersions) }
+		}
+	}
+}
+
+// The Paper plugin targets the Bukkit API, which one jar covers for every version
+include('paper')

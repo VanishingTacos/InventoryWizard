@@ -1,5 +1,5 @@
 modLoader = "javafml"
-loaderVersion = "[66,)"
+loaderVersion = "[${forge_loader_major},)"
 license = "MIT"
 issueTrackerURL = "https://github.com/VanishingTacos/InventoryWizard/issues"
 clientSideOnly = true
@@ -16,13 +16,13 @@ description = '''Magically sort chests, shulker boxes, barrels, ender chests, yo
 [[dependencies.inventorywizard]]
 modId = "forge"
 mandatory = true
-versionRange = "[66.0.13,)"
+versionRange = "[${forge_version_number},)"
 ordering = "NONE"
 side = "CLIENT"
 
 [[dependencies.inventorywizard]]
 modId = "minecraft"
 mandatory = true
-versionRange = "[${minecraft_version},26.4)"
+versionRange = "${mods_toml_minecraft_range}"
 ordering = "NONE"
 side = "CLIENT"

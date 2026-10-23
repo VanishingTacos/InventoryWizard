@@ -13,7 +13,7 @@ configurations {
 }
 
 dependencies {
-	commonGametestJava(project(path: ':common', configuration: 'commonGametestJava'))
+	commonGametestJava(project(path: ":common:${project.name}", configuration: 'commonGametestJava'))
 }
 
 ext.useCommonGametests = { SourceSet sourceSet ->
@@ -27,7 +27,7 @@ ext.useCommonGametests = { SourceSet sourceSet ->
 }
 
 // Start every run from a fresh game folder, like Fabric's runClientGameTest
-def gameTestRunDir = rootProject.file("run/${project.name}-gametest")
+def gameTestRunDir = rootProject.file("run/${loaderName}-gametest")
 def cleanGameTestRun = tasks.register('cleanClientGameTestRun', Delete) {
 	delete gameTestRunDir
 }

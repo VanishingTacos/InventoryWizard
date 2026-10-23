@@ -64,7 +64,10 @@ final class ItemCategories {
     }
 
     private static boolean isWeapon(ItemStack stack) {
+        //? if >=1.21.11 {
         return stack.is(ItemTags.SWORDS) || stack.is(ItemTags.SPEARS) || stack.is(ItemTags.ARROWS)
+        //?} else
+        //return stack.is(ItemTags.SWORDS) || stack.is(ItemTags.ARROWS)
                 || stack.is(Items.BOW) || stack.is(Items.CROSSBOW) || stack.is(Items.TRIDENT) || stack.is(Items.MACE);
     }
 
@@ -80,7 +83,12 @@ final class ItemCategories {
 
     private static boolean isArmor(ItemStack stack) {
         return stack.is(ItemTags.HEAD_ARMOR) || stack.is(ItemTags.CHEST_ARMOR) || stack.is(ItemTags.LEG_ARMOR)
+                //? if >=1.21.5 {
                 || stack.is(ItemTags.FOOT_ARMOR) || stack.has(DataComponents.BLOCKS_ATTACKS) || stack.has(DataComponents.GLIDER);
+                //?} else if >=1.21.2 {
+                /*|| stack.is(ItemTags.FOOT_ARMOR) || stack.is(Items.SHIELD) || stack.has(DataComponents.GLIDER);
+                *///?} else
+                //|| stack.is(ItemTags.FOOT_ARMOR) || stack.is(Items.SHIELD) || stack.is(Items.ELYTRA);
     }
 
     private static boolean isFood(ItemStack stack) {

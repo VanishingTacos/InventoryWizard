@@ -1,7 +1,7 @@
 name: InventoryWizard
 version: ${version}
 main: com.inventorywizard.InventoryWizardPlugin
-api-version: "26.3"
+api-version: "${paper_api_level}"
 description: Magically sort chests and inventories with H2 database performance and cycling sorting modes
 author: VanishingTacos
 website: https://github.com/VanishingTacos/InventoryWizard

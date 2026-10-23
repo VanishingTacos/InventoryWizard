@@ -21,6 +21,7 @@ public class InventoryWizardNeoForge {
 
     public InventoryWizardNeoForge(IEventBus modBus, ModContainer container) {
         modBus.addListener(RegisterKeyMappingsEvent.class, event -> {
+            //? if >=1.21.9
             event.registerCategory(InventoryWizard.CATEGORY);
             event.register(InventoryWizard.SORT_KEY);
             event.register(InventoryWizard.CYCLE_MODE_KEY);
@@ -36,13 +37,15 @@ public class InventoryWizardNeoForge {
 
         bus.addListener(ScreenEvent.MouseButtonPressed.Pre.class, event -> {
             if (InventoryWizard.handlesScreen(event.getScreen())
-                    && InventoryWizard.onMouseClick(Minecraft.getInstance(), (AbstractContainerScreen<?>) event.getScreen(), event.getMouseButtonEvent())) {
+                    && InventoryWizard.onMouseClick(Minecraft.getInstance(), (AbstractContainerScreen<?>) event.getScreen(),
+                    /*? if >=1.21.9 {*/ event.getMouseButtonEvent() /*?} else {*/ /*event.getButton() *//*?}*/)) {
                 event.setCanceled(true);
             }
         });
         bus.addListener(ScreenEvent.KeyPressed.Pre.class, event -> {
             if (InventoryWizard.handlesScreen(event.getScreen())
-                    && InventoryWizard.onKeyPress(Minecraft.getInstance(), (AbstractContainerScreen<?>) event.getScreen(), event.getKeyEvent())) {
+                    && InventoryWizard.onKeyPress(Minecraft.getInstance(), (AbstractContainerScreen<?>) event.getScreen(),
+                    /*? if >=1.21.9 {*/ event.getKeyEvent() /*?} else {*/ /*event.getKeyCode(), event.getScanCode() *//*?}*/)) {
                 event.setCanceled(true);
             }
         });

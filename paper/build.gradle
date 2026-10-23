@@ -34,7 +34,7 @@ tasks.named('assemble') {
 }
 
 tasks.named('runServer') {
-	minecraftVersion(project.minecraft_version)
+	minecraftVersion(project.paper_test_minecraft_version)
 }
 
 // Server-side gametests: a second plugin that exercises InventoryWizard on a real Paper server, then stops it
@@ -46,13 +46,15 @@ sourceSets {
 
 def gametestJar = tasks.register('gametestJar', Jar) {
 	archiveClassifier = 'gametest'
+	// Test-only plugin, so it stays out of versions/
+	destinationDirectory = layout.buildDirectory.dir('libs')
 	from sourceSets.gametest.output
 }
 
 tasks.register('runPaperTest', xyz.jpenilla.runpaper.task.RunServer) {
 	group = 'verification'
 	description = 'Runs the InventoryWizard gametests on a Paper test server.'
-	minecraftVersion(project.minecraft_version)
+	minecraftVersion(project.paper_test_minecraft_version)
 	pluginJars(tasks.named('shadowJar').flatMap { it.archiveFile }, gametestJar.flatMap { it.archiveFile })
 	runDirectory = layout.projectDirectory.dir('run/gametest')
 	jvmArgs('-Dcom.mojang.eula.agree=true')

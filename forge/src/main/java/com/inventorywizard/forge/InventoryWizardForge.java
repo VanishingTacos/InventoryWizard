@@ -9,6 +9,10 @@ import net.minecraftforge.client.event.ClientPlayerNetworkEvent;
 import net.minecraftforge.client.event.RegisterClientCommandsEvent;
 import net.minecraftforge.client.event.RegisterKeyMappingsEvent;
 import net.minecraftforge.client.event.ScreenEvent;
+//? if <1.21.6 {
+/*import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.eventbus.api.IEventBus;
+*///?}
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
@@ -18,7 +22,12 @@ import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 public class InventoryWizardForge {
 
     public InventoryWizardForge(FMLJavaModLoadingContext context) {
+        //? if >=1.21.9 {
         RegisterKeyMappingsEvent.BUS.addListener(event -> {
+        //?} else if >=1.21.6 {
+        /*RegisterKeyMappingsEvent.getBus(context.getModBusGroup()).addListener(event -> {
+        *///?} else
+        //context.getModEventBus().addListener((RegisterKeyMappingsEvent event) -> {
             event.register(InventoryWizard.SORT_KEY);
             event.register(InventoryWizard.CYCLE_MODE_KEY);
         });
@@ -29,16 +38,45 @@ public class InventoryWizardForge {
 
         InventoryWizard.init();
 
+        //? if >=1.21.6 {
         TickEvent.ClientTickEvent.Post.BUS.addListener(event -> InventoryWizard.onClientTick(Minecraft.getInstance()));
+        //?}
 
         // Returning true cancels the event
+        //? if >=1.21.9 {
         ScreenEvent.MouseButtonPressed.Pre.BUS.addListener(event -> InventoryWizard.handlesScreen(event.getScreen())
                 && InventoryWizard.onMouseClick(Minecraft.getInstance(), (AbstractContainerScreen<?>) event.getScreen(), event.getInfo()));
         ScreenEvent.KeyPressed.Pre.BUS.addListener(event -> InventoryWizard.handlesScreen(event.getScreen())
                 && InventoryWizard.onKeyPress(Minecraft.getInstance(), (AbstractContainerScreen<?>) event.getScreen(), event.getInfo()));
+        //?} else if >=1.21.6 {
+        /*ScreenEvent.MouseButtonPressed.Pre.BUS.addListener(event -> InventoryWizard.handlesScreen(event.getScreen())
+                && InventoryWizard.onMouseClick(Minecraft.getInstance(), (AbstractContainerScreen<?>) event.getScreen(), event.getButton()));
+        ScreenEvent.KeyPressed.Pre.BUS.addListener(event -> InventoryWizard.handlesScreen(event.getScreen())
+                && InventoryWizard.onKeyPress(Minecraft.getInstance(), (AbstractContainerScreen<?>) event.getScreen(), event.getKeyCode(), event.getScanCode()));
+        *///?}
 
+        //? if >=1.21.6 {
         RegisterClientCommandsEvent.BUS.addListener(event -> InventoryWizard.registerCommands(event.getDispatcher()));
 
         ClientPlayerNetworkEvent.LoggingIn.BUS.addListener(event -> InventoryWizard.onJoinWorld(Minecraft.getInstance()));
+        //?} else {
+        /*// Before Forge's EventBus 7 everything goes through the one game event bus and is cancelled by hand
+        IEventBus bus = MinecraftForge.EVENT_BUS;
+        bus.addListener((TickEvent.ClientTickEvent.Post event) -> InventoryWizard.onClientTick(Minecraft.getInstance()));
+        bus.addListener((ScreenEvent.MouseButtonPressed.Pre event) -> {
+            if (InventoryWizard.handlesScreen(event.getScreen())
+                    && InventoryWizard.onMouseClick(Minecraft.getInstance(), (AbstractContainerScreen<?>) event.getScreen(), event.getButton())) {
+                event.setCanceled(true);
+            }
+        });
+        bus.addListener((ScreenEvent.KeyPressed.Pre event) -> {
+            if (InventoryWizard.handlesScreen(event.getScreen())
+                    && InventoryWizard.onKeyPress(Minecraft.getInstance(), (AbstractContainerScreen<?>) event.getScreen(), event.getKeyCode(), event.getScanCode())) {
+                event.setCanceled(true);
+            }
+        });
+        bus.addListener((RegisterClientCommandsEvent event) -> InventoryWizard.registerCommands(event.getDispatcher()));
+        bus.addListener((ClientPlayerNetworkEvent.LoggingIn event) -> InventoryWizard.onJoinWorld(Minecraft.getInstance()));
+        *///?}
     }
 }

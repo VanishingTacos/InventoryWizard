@@ -18,7 +18,10 @@ neoForge {
 
 dependencies {
 	// Fabric Loader and NeoForge both ship Mixin
-	compileOnly "net.fabricmc:sponge-mixin:${project.mixin_version}"
+	// Only the annotations are needed; its ASM would clash with the version older Minecraft pins
+	compileOnly("net.fabricmc:sponge-mixin:${project.mixin_version}") {
+		transitive = false
+	}
 }
 
 configurations {
@@ -32,9 +35,12 @@ configurations {
 	}
 }
 
+// Stonecutter writes the sources for this Minecraft version to build/generated/stonecutter
+def versionedSources = { String path -> layout.buildDirectory.dir("generated/stonecutter/$path") }
+
 artifacts {
-	commonJava sourceSets.main.java.sourceDirectories.singleFile
-	commonResources sourceSets.main.resources.sourceDirectories.singleFile
+	commonJava(versionedSources('main/java')) { builtBy tasks.named('stonecutterGenerate') }
+	commonResources(versionedSources('main/resources')) { builtBy tasks.named('stonecutterGenerate') }
 }
 
 // NeoForge/Forge client gametests; compiled here against vanilla, run by each loader's runClientGameTest
@@ -52,5 +58,5 @@ configurations {
 }
 
 artifacts {
-	commonGametestJava sourceSets.gametest.java.sourceDirectories.singleFile
+	commonGametestJava(versionedSources('gametest/java')) { builtBy tasks.named('stonecutterGenerateGametest') }
 }

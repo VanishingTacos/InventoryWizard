@@ -3,23 +3,41 @@ plugins {
 	id 'java'
 }
 
+// Stonecutter nodes are <loader>/versions/<mc>, so the project is named after the Minecraft version
+// and its parent after the loader; Paper is a plain subproject
+def isVersioned = project.parent != rootProject
+def loaderName = isVersioned ? project.parent.name : project.name
+ext.loaderName = loaderName
+
 version = rootProject.version
-group = rootProject.group
+// Nodes of different loaders share a name (the Minecraft version), and Gradle mixes up projects
+// with the same group:name:version, so the loader goes in the group
+group = isVersioned ? "${rootProject.group}.${loaderName}" : rootProject.group
+
+if (isVersioned) {
+	// Dependency versions for this Minecraft version, e.g. minecraft_version, fabric_api_version
+	def versionProperties = new Properties()
+	versionProperties.load(new StringReader(providers.fileContents(
+			rootProject.layout.projectDirectory.file("props/${project.name}.properties")).asText.get()))
+	versionProperties.each { key, value -> ext.set(key, value) }
+}
+
+def javaVersion = isVersioned ? (project.java_version as int) : 21
 
 base {
-	archivesName = "${rootProject.archives_base_name}-${project.name}"
+	archivesName = "${rootProject.archives_base_name}-${loaderName}"
 }
 
 tasks.withType(JavaCompile).configureEach {
 	it.options.encoding = 'UTF-8'
-	it.options.release = 25
+	it.options.release = javaVersion
 }
 
 java {
 	withSourcesJar()
 
-	sourceCompatibility = JavaVersion.VERSION_25
-	targetCompatibility = JavaVersion.VERSION_25
+	sourceCompatibility = JavaVersion.toVersion(javaVersion)
+	targetCompatibility = JavaVersion.toVersion(javaVersion)
 }
 
 tasks.withType(Jar).configureEach {
@@ -31,11 +49,38 @@ tasks.withType(Jar).configureEach {
 	}
 }
 
+// Built jars go to versions/<mc version>-<loader>/ at the repo root; common is only compiled into the others
+if (loaderName != 'common') {
+	def jarDirectory = rootProject.layout.projectDirectory.dir(isVersioned
+			? "versions/${project.name}-${loaderName}"
+			: "versions/${project.paper_api_level}-${loaderName}")
+	// Every Minecraft version builds the same mod version, so tell the jars apart by name
+	def jarVersion = isVersioned ? "${project.version}+${project.name}" : project.version
+	ext.jarDirectory = jarDirectory
+	ext.jarVersion = jarVersion
+	tasks.withType(Jar).configureEach {
+		destinationDirectory = jarDirectory
+		archiveVersion = jarVersion
+	}
+}
+
+// Values the mod metadata files are templated with
+def resourceProperties = [version: project.version]
+for (key in ['minecraft_version', 'fabric_minecraft_range', 'mods_toml_minecraft_range', 'java_version', 'pack_format',
+			 'fabric_loader_min', 'neoforge_version', 'forge_version', 'paper_api_level']) {
+	if (project.hasProperty(key)) resourceProperties[key] = project.property(key)
+}
+if (resourceProperties.forge_version) {
+	resourceProperties.forge_version_number = resourceProperties.forge_version.tokenize('-')[1]
+	resourceProperties.forge_loader_major = resourceProperties.forge_version_number.tokenize('.')[0]
+}
+ext.resourceProperties = resourceProperties
+
 processResources {
-	def props = [version: project.version, minecraft_version: project.minecraft_version, neoforge_version: project.neoforge_version, forge_version: project.forge_version]
+	def props = resourceProperties
 	inputs.properties props
 
-	filesMatching(["fabric.mod.json", "META-INF/neoforge.mods.toml", "META-INF/mods.toml", "plugin.yml"]) {
+	filesMatching(["fabric.mod.json", "META-INF/neoforge.mods.toml", "META-INF/mods.toml", "pack.mcmeta", "plugin.yml"]) {
 		expand props
 	}
 }

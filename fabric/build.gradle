@@ -1,7 +1,15 @@
 plugins {
 	id 'inventorywizard-loader'
-	id 'net.fabricmc.fabric-loom'
 }
+
+// Minecraft up to 1.21.11 is obfuscated, so the mod is compiled with Mojang mappings and remapped to intermediary
+def obfuscated = stonecutter.eval(stonecutter.current.version, '<26.1')
+apply plugin: obfuscated ? 'net.fabricmc.fabric-loom-remap' : 'net.fabricmc.fabric-loom'
+// Fabric API's client gametest module starts at 1.21.4, and the tests are written against the 1.21.11+ API
+def hasClientGameTests = stonecutter.eval(stonecutter.current.version, '>=1.21.4')
+
+// Mods have to be remapped too when Minecraft is
+def modConfiguration = { String name -> obfuscated ? "mod${name.capitalize()}" : name }
 
 repositories {
 	maven {
@@ -26,8 +34,11 @@ def useQuilt = providers.gradleProperty('loader').getOrElse('fabric') == 'quilt'
 
 dependencies {
 	minecraft "com.mojang:minecraft:${project.minecraft_version}"
+	if (obfuscated) {
+		mappings loom.officialMojangMappings()
+	}
 	if (useQuilt) {
-		implementation "org.quiltmc:quilt-loader:${project.quilt_loader_version}"
+		add(modConfiguration('implementation'), "org.quiltmc:quilt-loader:${project.quilt_loader_version}")
 		// Loom only reads fabric-installer.json, so add the libraries from quilt-loader's quilt_installer.json by hand
 		[
 			'org.quiltmc:quilt-json5:1.0.4+final',
@@ -41,34 +52,65 @@ dependencies {
 			'io.github.llamalad7:mixinextras-fabric:0.5.5',
 		].each { implementation it }
 	} else {
-		implementation "net.fabricmc:fabric-loader:${project.loader_version}"
+		add(modConfiguration('implementation'), "net.fabricmc:fabric-loader:${project.loader_version}")
 	}
-	implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
+	add(modConfiguration('implementation'), "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}")
 
 	// Settings screen is exposed through the Mod Menu API, which Mod Settings reads
-	compileOnly "com.terraformersmc:modmenu:${project.modmenu_version}"
-	localRuntime "maven.modrinth:mod-settings:${project.mod_settings_version}"
+	add(modConfiguration('compileOnly'), "com.terraformersmc:modmenu:${project.modmenu_version}")
+	add(modConfiguration('localRuntime'), "maven.modrinth:mod-settings:${project.mod_settings_version}")
 }
 
 // Keep using the existing run/ folder at the repo root
 loom.runs.configureEach {
-	runDir = '../run'
+	runDir = relativePath(rootProject.file('run'))
 }
 
-fabricApi {
-	configureTests {
-		createSourceSet = true
-		modId = "inventorywizard-test"
-		enableGameTests = false
-		enableClientGameTests = true
-		eula = true
+if (obfuscated) {
+	// remapJar and remapSourcesJar make the jars that ship; keep the unmapped ones out of versions/
+	tasks.named('jar', Jar) {
+		destinationDirectory = layout.buildDirectory.dir('devlibs')
+	}
+	tasks.named('sourcesJar', Jar) {
+		destinationDirectory = layout.buildDirectory.dir('devlibs')
+	}
+	// Loom sets up its remap tasks after the shared Jar defaults, so repeat them here
+	afterEvaluate {
+		tasks.named('remapJar') {
+			destinationDirectory = jarDirectory
+			archiveVersion = jarVersion
+		}
+		tasks.named('remapSourcesJar') {
+			destinationDirectory = jarDirectory
+			archiveVersion = jarVersion
+		}
+	}
+}
+
+if (hasClientGameTests) {
+	fabricApi {
+		configureTests {
+			createSourceSet = true
+			modId = "inventorywizard-test"
+			enableGameTests = false
+			enableClientGameTests = true
+			eula = true
+		}
+	}
+
+	// Optional slow-motion for watching the client gametests: -PtestPace=<ticks per step>
+	tasks.named('runClientGameTest') {
+		def pace = providers.gradleProperty('testPace')
+		if (pace.isPresent()) {
+			systemProperty 'inventorywizard.test.pace', pace.get()
+		}
 	}
 }
 
 if (useQuilt) {
 	// Loom only sets the fabric.* dev properties; Quilt reads loader.* instead, and without them it
 	// loads no mods from the dev classpath. Each group is one mod's classes + resources folders.
-	def classPathGroups = [sourceSets.main, sourceSets.gametest].collect { sourceSet ->
+	def classPathGroups = sourceSets.matching { it.name in ['main', 'gametest'] }.collect { sourceSet ->
 		(sourceSet.output.classesDirs.files + sourceSet.output.resourcesDir).join(File.pathSeparator)
 	}.join(File.pathSeparator * 2)
 
@@ -78,13 +120,5 @@ if (useQuilt) {
 				: 'org.quiltmc.loader.impl.launch.knot.KnotClient'
 		property 'loader.development', 'true'
 		property 'loader.classPathGroups', classPathGroups
-	}
-}
-
-// Optional slow-motion for watching the client gametests: -PtestPace=<ticks per step>
-tasks.named('runClientGameTest') {
-	def pace = providers.gradleProperty('testPace')
-	if (pace.isPresent()) {
-		systemProperty 'inventorywizard.test.pace', pace.get()
 	}
 }

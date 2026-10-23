@@ -14,9 +14,12 @@ configurations {
 	}
 }
 
+// The common project for the same Minecraft version
+def commonPath = ":common:${project.name}"
+
 dependencies {
-	commonJava(project(path: ':common', configuration: 'commonJava'))
-	commonResources(project(path: ':common', configuration: 'commonResources'))
+	commonJava(project(path: commonPath, configuration: 'commonJava'))
+	commonResources(project(path: commonPath, configuration: 'commonResources'))
 }
 
 tasks.named('compileJava', JavaCompile) {

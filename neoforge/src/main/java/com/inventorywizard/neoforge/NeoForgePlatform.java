@@ -2,8 +2,10 @@ package com.inventorywizard.neoforge;
 
 import com.inventorywizard.InventoryWizard;
 import com.inventorywizard.platform.Platform;
+//? if >=1.21.9 {
 import net.minecraft.client.KeyMapping;
 import net.minecraft.resources.Identifier;
+//?}
 import net.neoforged.fml.ModList;
 import net.neoforged.fml.loading.FMLPaths;
 
@@ -32,11 +34,13 @@ public class NeoForgePlatform implements Platform {
         return List.of("neoforge");
     }
 
+    //? if >=1.21.9 {
     /** Registered with {@code RegisterKeyMappingsEvent} in {@link InventoryWizardNeoForge}. */
     @Override
     public KeyMapping.Category keyMappingCategory(Identifier id) {
         return new KeyMapping.Category(id);
     }
+    //?}
 
     private static String version(String modId) {
         return ModList.get().getModContainerById(modId).orElseThrow().getModInfo().getVersion().toString();

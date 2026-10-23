@@ -26,9 +26,9 @@
 		"inventorywizard.mixins.json"
 	],
 	"depends": {
-		"fabricloader": ">=0.19.3",
-		"minecraft": "~26.3",
-		"java": ">=25",
+		"fabricloader": ">=${fabric_loader_min}",
+		"minecraft": "${fabric_minecraft_range}",
+		"java": ">=${java_version}",
 		"fabric-api": "*"
 	},
 	"suggests": {

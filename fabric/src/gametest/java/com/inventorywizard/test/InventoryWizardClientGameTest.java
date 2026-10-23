@@ -13,14 +13,17 @@ import net.fabricmc.fabric.api.client.gametest.v1.context.TestDedicatedServerCon
 import net.fabricmc.fabric.api.client.gametest.v1.context.TestServerConnection;
 import net.fabricmc.fabric.api.client.gametest.v1.context.TestServerContext;
 import net.fabricmc.fabric.api.client.gametest.v1.context.TestSingleplayerContext;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.events.ContainerEventHandler;
 import net.minecraft.client.gui.components.events.GuiEventListener;
+import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.gui.screens.inventory.ContainerScreen;
 import net.minecraft.client.gui.screens.inventory.InventoryScreen;
 import net.minecraft.client.gui.screens.inventory.ShulkerBoxScreen;
+//? if >=1.21.9
 import net.minecraft.client.input.MouseButtonInfo;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.component.DataComponents;
@@ -41,6 +44,7 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -70,7 +74,12 @@ public class InventoryWizardClientGameTest implements FabricClientGameTest {
         testConfigScreen(context);
 
         try (TestSingleplayerContext singleplayer = context.worldBuilder().create()) {
+            //? if >=26.2 {
             singleplayer.getConnection().waitForChunksRender();
+            //?} else if >=26.1 {
+            /*singleplayer.getClientLevel().waitForChunksRender();
+            *///?} else
+            //singleplayer.getClientWorld().waitForChunksRender();
             TestServerContext server = singleplayer.getServer();
             server.runCommand("gamemode survival @a");
             server.runCommand("time set day");
@@ -293,7 +302,12 @@ public class InventoryWizardClientGameTest implements FabricClientGameTest {
     private static void testDedicatedServerDoesNothing(ClientGameTestContext context) {
         try (TestDedicatedServerContext server = context.worldBuilder().createServer()) {
             try (var connection = server.connect()) {
+                //? if >=26.2 {
                 connection.waitForChunksRender();
+                //?} else if >=26.1 {
+                /*connection.getClientLevel().waitForChunksRender();
+                *///?} else
+                //connection.getClientWorld().waitForChunksRender();
                 server.runCommand("gamemode survival @a");
                 context.waitTicks(5);
                 server.runOnServer(s -> {
@@ -348,17 +362,35 @@ public class InventoryWizardClientGameTest implements FabricClientGameTest {
     }
 
     /**
-     * TestInput.pressMouse always sends modifiers = 0, so feed the mouse handler a
-     * click carrying the Shift modifier like a real Shift+Right-click does.
+     * Since 1.21.9 Shift comes from the click's modifiers, and TestInput.pressMouse always sends
+     * modifiers = 0, so feed the mouse handler a click carrying the Shift modifier like a real
+     * Shift+Right-click does. Before that, holding Shift is enough.
      */
     private static void shiftRightClick(ClientGameTestContext context) {
         context.getInput().holdShift();
+        //? if >=26.3 {
         context.runOnClient(client -> {
             long window = client.getWindow().handle();
             MouseButtonInfo click = new MouseButtonInfo(InputConstants.MOUSE_BUTTON_RIGHT, InputConstants.MOD_SHIFT);
             client.mouseHandler.onButton(window, click, InputConstants.PRESS);
             client.mouseHandler.onButton(window, click, InputConstants.RELEASE);
         });
+        //?} else if >=1.21.9 {
+        /*// MouseHandler.onButton is private before 26.3
+        context.runOnClient(client -> {
+            long window = client.getWindow().handle();
+            MouseButtonInfo click = new MouseButtonInfo(InputConstants.MOUSE_BUTTON_RIGHT, InputConstants.MOD_SHIFT);
+            try {
+                Method onButton = client.mouseHandler.getClass().getDeclaredMethod("onButton", long.class, MouseButtonInfo.class, int.class);
+                onButton.setAccessible(true);
+                onButton.invoke(client.mouseHandler, window, click, InputConstants.PRESS);
+                onButton.invoke(client.mouseHandler, window, click, InputConstants.RELEASE);
+            } catch (ReflectiveOperationException e) {
+                throw new AssertionError("Could not click", e);
+            }
+        });
+        *///?} else
+        //context.getInput().pressMouse(InputConstants.MOUSE_BUTTON_RIGHT);
         context.getInput().releaseShift();
         context.waitTicks(SORT_WAIT_TICKS);
     }
@@ -395,7 +427,7 @@ public class InventoryWizardClientGameTest implements FabricClientGameTest {
     /** Option buttons are labelled "Caption: Value", which clickScreenButton can't match, so find them by text. */
     private static void clickWidget(ClientGameTestContext context, String labelPrefix) {
         double[] position = context.computeOnClient(client -> {
-            AbstractWidget widget = findWidget(client.gui.screen(), labelPrefix);
+            AbstractWidget widget = findWidget(screen(client), labelPrefix);
             if (widget == null) {
                 throw new AssertionError("No widget labelled '" + labelPrefix + "...' on screen");
             }
@@ -425,9 +457,17 @@ public class InventoryWizardClientGameTest implements FabricClientGameTest {
         return null;
     }
 
+    /** The open screen, which Minecraft keeps in Gui since 26.2. */
+    private static Screen screen(Minecraft client) {
+        //? if >=26.2 {
+        return client.gui.screen();
+        //?} else
+        //return client.screen;
+    }
+
     private static void hoverSlot(ClientGameTestContext context, Predicate<Slot> which) {
         double[] position = context.computeOnClient(client -> {
-            AbstractContainerScreen<?> screen = (AbstractContainerScreen<?>) client.gui.screen();
+            AbstractContainerScreen<?> screen = (AbstractContainerScreen<?>) screen(client);
             Slot slot = screen.getMenu().slots.stream().filter(which).findFirst().orElseThrow();
             ScreenPositionAccessor accessor = (ScreenPositionAccessor) screen;
             double scale = (double) client.getWindow().getScreenWidth() / client.getWindow().getGuiScaledWidth();
@@ -440,7 +480,7 @@ public class InventoryWizardClientGameTest implements FabricClientGameTest {
         context.waitTicks(2);
 
         boolean hovered = context.computeOnClient(client -> {
-            Slot slot = ((AbstractContainerScreenAccessor) client.gui.screen()).inventorywizard$getHoveredSlot();
+            Slot slot = ((AbstractContainerScreenAccessor) screen(client)).inventorywizard$getHoveredSlot();
             return slot != null && which.test(slot);
         });
         if (!hovered) {

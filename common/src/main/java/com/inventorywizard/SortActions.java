@@ -11,8 +11,16 @@ import net.minecraft.sounds.SoundEvent;
 import net.minecraft.world.CompoundContainer;
 import net.minecraft.world.Container;
 import net.minecraft.world.entity.player.Inventory;
+//? if >=1.21.11 {
 import net.minecraft.world.entity.vehicle.boat.AbstractChestBoat;
 import net.minecraft.world.entity.vehicle.minecart.MinecartChest;
+//?} else if >=1.21.2 {
+/*import net.minecraft.world.entity.vehicle.AbstractChestBoat;
+import net.minecraft.world.entity.vehicle.MinecartChest;
+*///?} else {
+/*import net.minecraft.world.entity.vehicle.ChestBoat;
+import net.minecraft.world.entity.vehicle.MinecartChest;
+*///?}
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.ChestMenu;
 import net.minecraft.world.inventory.PlayerEnderChestContainer;
@@ -199,7 +207,10 @@ public final class SortActions {
         if (container instanceof BarrelBlockEntity) return ContainerKind.BARREL;
         if (container instanceof PlayerEnderChestContainer) return ContainerKind.ENDER_CHEST;
         if (container instanceof ChestBlockEntity || container instanceof CompoundContainer
+                //? if >=1.21.2 {
                 || container instanceof MinecartChest || container instanceof AbstractChestBoat) {
+                //?} else
+                //|| container instanceof MinecartChest || container instanceof ChestBoat) {
             return ContainerKind.CHEST;
         }
         return null;
@@ -230,13 +241,19 @@ public final class SortActions {
 
         if (config.playSound) {
             Identifier id = Identifier.tryParse(config.sound.id);
+            //? if >=1.21.2 {
             SoundEvent sound = id == null ? null : BuiltInRegistries.SOUND_EVENT.getValue(id);
+            //?} else
+            //SoundEvent sound = id == null ? null : BuiltInRegistries.SOUND_EVENT.get(id);
             if (sound != null) {
                 client.getSoundManager().play(SimpleSoundInstance.forUI(sound, config.sound.pitch + feedback.pitchOffset(), config.sound.volume));
             }
         }
         if (config.showMessages && client.player != null) {
+            //? if >=26.1 {
             client.player.sendOverlayMessage(feedback.message());
+            //?} else
+            //client.player.displayClientMessage(feedback.message(), true);
         }
     }
 }

@@ -40,6 +40,15 @@ dependencies {
 	implementation minecraft.dependency("net.minecraftforge:forge:${project.forge_version}")
 }
 
+// The test mod's mods.toml names the Forge loader version too
+tasks.named('processTestResources', ProcessResources) {
+	def props = resourceProperties
+	inputs.properties props
+	filesMatching(['META-INF/mods.toml', 'pack.mcmeta']) {
+		expand props
+	}
+}
+
 tasks.named('jar', Jar) {
 	manifest {
 		attributes['MixinConfigs'] = "${project.mod_id}.mixins.json"

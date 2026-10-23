@@ -1,7 +1,8 @@
 {
 	"pack": {
 		"description": "InventoryWizard test resources",
-		"min_format": 121,
-		"max_format": 121
+		"pack_format": ${pack_format},
+		"min_format": ${pack_format},
+		"max_format": ${pack_format}
 	}
 }

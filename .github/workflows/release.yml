@@ -1,4 +1,4 @@
-# Builds the Fabric, NeoForge, Forge and Paper jars on every push and PR.
+# Builds the Fabric, NeoForge and Forge jars for every Minecraft version, plus the Paper jar, on every push and PR.
 # Pushes to main also (re)create a draft release named after `version` in gradle.properties,
 # with release notes made from the conventional commits since the previous release tag.
 name: Build & Draft Release
@@ -43,13 +43,18 @@ jobs:
           chmod +x gradlew
           ./gradlew build --stacktrace
 
-      # Only the jars players install: no -sources jars, and not Paper's unshaded -plain jar
+      # Only the jars players install: no -sources jars, and not Paper's unshaded -plain jar.
+      # Mod jars are versions/<mc>-<loader>/InventoryWizard-<loader>-<version>+<mc>.jar
       - name: Collect jars
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
         run: |
           mkdir -p dist
-          for loader in fabric neoforge forge paper; do
-            cp "$loader/build/libs/InventoryWizard-$loader-${{ steps.version.outputs.version }}.jar" dist/
+          for loader in fabric neoforge forge; do
+            cp versions/*-$loader/InventoryWizard-$loader-$VERSION+*.jar dist/
           done
+          rm -f dist/*-sources.jar
+          cp versions/*-paper/InventoryWizard-paper-$VERSION.jar dist/
           ls -l dist
 
       - uses: actions/upload-artifact@v4
@@ -120,10 +125,21 @@ jobs:
             section 'Other changes' 'refactor|docs|test|build|ci|chore|style'
             echo '## Downloads'
             echo
-            echo "- **Fabric / Quilt:** \`InventoryWizard-fabric-$VERSION.jar\`"
-            echo "- **NeoForge:** \`InventoryWizard-neoforge-$VERSION.jar\`"
-            echo "- **Forge:** \`InventoryWizard-forge-$VERSION.jar\`"
-            echo "- **Paper / Spigot:** \`InventoryWizard-paper-$VERSION.jar\`"
+            echo "Pick the jar for your loader and Minecraft version: \`InventoryWizard-<loader>-$VERSION+<minecraft>.jar\`."
+            echo "The table below lists the Minecraft versions each jar supports."
+            echo
+            echo "- **Fabric / Quilt:** \`InventoryWizard-fabric-$VERSION+<minecraft>.jar\`"
+            echo "- **NeoForge:** \`InventoryWizard-neoforge-$VERSION+<minecraft>.jar\`"
+            echo "- **Forge:** \`InventoryWizard-forge-$VERSION+<minecraft>.jar\`"
+            echo "- **Paper / Spigot (1.21 and newer):** \`InventoryWizard-paper-$VERSION.jar\`"
+            echo
+            echo "| Jar | Minecraft |"
+            echo "| --- | --- |"
+            for f in $(ls props/*.properties | sort -V); do
+              mc=$(basename "$f" .properties)
+              range=$(grep -E '^mods_toml_minecraft_range=' "$f" | cut -d= -f2)
+              echo "| \`+$mc\` | \`$range\` |"
+            done
             if [ -n "$prev" ]; then
               echo
               echo "**Full changelog:** https://github.com/$GITHUB_REPOSITORY/compare/$prev...$TAG"

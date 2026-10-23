@@ -35,6 +35,7 @@ public class InventoryWizardConfigScreen extends OptionsSubScreen {
                 config.sortMode,
                 mode -> config.sortMode = mode));
 
+        //? if >=1.21.11
         list.addHeader(Component.translatable("inventorywizard.config.header.feedback"));
         list.addSmall(
                 bool("show_messages", config.showMessages, v -> config.showMessages = v),
@@ -49,6 +50,7 @@ public class InventoryWizardConfigScreen extends OptionsSubScreen {
                 volume -> config.sound.volume = volume.floatValue()));
 
         InventoryWizardConfig.Features features = config.features;
+        //? if >=1.21.11
         list.addHeader(Component.translatable("inventorywizard.config.header.features"));
         list.addSmall(
                 bool("feature.chest", features.chestSorting, v -> features.chestSorting = v),
@@ -58,6 +60,7 @@ public class InventoryWizardConfigScreen extends OptionsSubScreen {
                 bool("feature.inventory", features.inventorySorting, v -> features.inventorySorting = v),
                 bool("feature.hotbar", features.hotbarSorting, v -> features.hotbarSorting = v));
 
+        //? if >=1.21.11
         list.addHeader(Component.translatable("inventorywizard.config.header.partial_stacks"));
         list.addSmall(
                 bool("partial_stacks.chest", config.allowPartialStacksChest, v -> config.allowPartialStacksChest = v),

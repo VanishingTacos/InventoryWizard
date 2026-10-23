@@ -11,8 +11,11 @@ import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.client.multiplayer.ClientLevel;
+//? if >=1.21.9 {
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonInfo;
+//?}
 import net.minecraft.core.registries.Registries;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.Difficulty;
@@ -24,6 +27,7 @@ import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.level.levelgen.presets.WorldPresets;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -94,7 +98,7 @@ public final class ClientTestContext {
         long deadline = System.nanoTime() + timeout.toNanos();
         while (!computeOnClient(condition::test)) {
             if (System.nanoTime() > deadline) {
-                Screen screen = computeOnClient(client -> client.gui.screen());
+                Screen screen = computeOnClient(client -> screen(client));
                 throw new AssertionError("Timed out waiting for " + what + " (screen: " + screen + ")");
             }
             sleep(TICK_MILLIS);
@@ -102,7 +106,7 @@ public final class ClientTestContext {
     }
 
     public void waitForScreen(Class<? extends Screen> type) {
-        waitFor(type.getSimpleName(), client -> type.isInstance(client.gui.screen()), DEFAULT_TIMEOUT);
+        waitFor(type.getSimpleName(), client -> type.isInstance(screen(client)), DEFAULT_TIMEOUT);
     }
 
     // ---- game lifecycle -----------------------------------------------------------
@@ -116,8 +120,8 @@ public final class ClientTestContext {
             }
             sleep(TICK_MILLIS);
         }
-        waitFor("the game to finish loading", client -> client.gui.overlay() == null && client.gui.screen() != null, WORLD_TIMEOUT);
-        Screen first = computeOnClient(client -> client.gui.screen());
+        waitFor("the game to finish loading", client -> !isLoading(client) && screen(client) != null, WORLD_TIMEOUT);
+        Screen first = computeOnClient(client -> screen(client));
         // NeoForge and Forge report mod loading errors and warnings on a LoadingErrorScreen; skipping it
         // hides the problem and leaves the game half set up, so fail with what it says instead
         if (first.getClass().getSimpleName().contains("LoadingError")) {
@@ -128,31 +132,53 @@ public final class ClientTestContext {
         runOnClient(client -> {
             client.options.onboardAccessibility = false;
             client.options.save();
-            client.gui.setScreen(new TitleScreen());
+            showScreen(client, new TitleScreen());
         });
         waitForScreen(TitleScreen.class);
     }
 
     /** Creates a fresh superflat survival world on peaceful and waits until the player is in it. */
     public void createWorld(String name) {
+        //? if >=26.1 {
+        LevelSettings settings = new LevelSettings(name, GameType.SURVIVAL, new LevelSettings.DifficultySettings(Difficulty.PEACEFUL, false, false),
+                true, WorldDataConfiguration.DEFAULT);
+        //?} else if >=1.21.11 {
+        /*LevelSettings settings = new LevelSettings(name, GameType.SURVIVAL, false, Difficulty.PEACEFUL, true,
+                new net.minecraft.world.level.gamerules.GameRules(WorldDataConfiguration.DEFAULT.enabledFeatures()), WorldDataConfiguration.DEFAULT);
+        *///?} else if >=1.21.2 {
+        /*LevelSettings settings = new LevelSettings(name, GameType.SURVIVAL, false, Difficulty.PEACEFUL, true,
+                new net.minecraft.world.level.GameRules(WorldDataConfiguration.DEFAULT.enabledFeatures()), WorldDataConfiguration.DEFAULT);
+        *///?} else {
+        /*LevelSettings settings = new LevelSettings(name, GameType.SURVIVAL, false, Difficulty.PEACEFUL, true,
+                new net.minecraft.world.level.GameRules(), WorldDataConfiguration.DEFAULT);
+        *///?}
         runOnClient(client -> client.createWorldOpenFlows().createFreshLevel(
                 name,
-                new LevelSettings(name, GameType.SURVIVAL, new LevelSettings.DifficultySettings(Difficulty.PEACEFUL, false, false),
-                        true, WorldDataConfiguration.DEFAULT),
+                settings,
                 new WorldOptions(0L, false, false),
+                //? if >=1.21.2 {
                 registries -> registries.lookupOrThrow(Registries.WORLD_PRESET).getOrThrow(WorldPresets.FLAT).value().createWorldDimensions(),
+                //?} else
+                //registries -> registries.registryOrThrow(Registries.WORLD_PRESET).getHolderOrThrow(WorldPresets.FLAT).value().createWorldDimensions(),
                 new TitleScreen()));
-        waitFor("the world to load", client -> client.level != null && client.player != null && client.gui.screen() == null, WORLD_TIMEOUT);
+        waitFor("the world to load", client -> client.level != null && client.player != null && screen(client) == null, WORLD_TIMEOUT);
         waitTicks(40);
     }
 
     public void leaveWorld() {
-        runOnClient(client -> client.disconnect(new TitleScreen(), false));
+        runOnClient(client -> {
+            // Like the pause menu: closing the connection first is what stops the integrated server
+            //? if >=1.21.6 {
+            client.level.disconnect(ClientLevel.DEFAULT_QUIT_MESSAGE);
+            //?} else
+            //client.level.disconnect();
+            client.disconnect(new TitleScreen(), false);
+        });
         waitForScreen(TitleScreen.class);
     }
 
     public void setScreen(Supplier<Screen> screen) {
-        runOnClient(client -> client.gui.setScreen(screen.get()));
+        runOnClient(client -> showScreen(client, screen.get()));
     }
 
     // ---- input ----------------------------------------------------------------------
@@ -161,21 +187,43 @@ public final class ClientTestContext {
         pressKey(key, 0);
     }
 
+    // Before 26.3 most of these input handlers are private, so they are called reflectively
     public void pressKey(int key, int modifiers) {
         runOnClient(client -> {
-            long window = client.getWindow().handle();
+            long window = windowHandle(client);
+            //? if >=26.3 {
             KeyEvent event = new KeyEvent(key, 0, modifiers);
             client.keyboardHandler.keyPress(window, InputConstants.PRESS, event);
             client.keyboardHandler.keyPress(window, InputConstants.RELEASE, event);
+            //?} else if >=1.21.9 {
+            /*KeyEvent event = new KeyEvent(key, 0, modifiers);
+            Class<?>[] types = {long.class, int.class, KeyEvent.class};
+            invoke(client.keyboardHandler, "keyPress", types, window, InputConstants.PRESS, event);
+            invoke(client.keyboardHandler, "keyPress", types, window, InputConstants.RELEASE, event);
+            *///?} else {
+            /*client.keyboardHandler.keyPress(window, key, 0, InputConstants.PRESS, modifiers);
+            client.keyboardHandler.keyPress(window, key, 0, InputConstants.RELEASE, modifiers);
+            *///?}
         });
     }
 
     public void click(int button, int modifiers) {
         runOnClient(client -> {
-            long window = client.getWindow().handle();
+            long window = windowHandle(client);
+            //? if >=26.3 {
             MouseButtonInfo info = new MouseButtonInfo(button, modifiers);
             client.mouseHandler.onButton(window, info, InputConstants.PRESS);
             client.mouseHandler.onButton(window, info, InputConstants.RELEASE);
+            //?} else if >=1.21.9 {
+            /*MouseButtonInfo info = new MouseButtonInfo(button, modifiers);
+            Class<?>[] types = {long.class, MouseButtonInfo.class, int.class};
+            invoke(client.mouseHandler, "onButton", types, window, info, InputConstants.PRESS);
+            invoke(client.mouseHandler, "onButton", types, window, info, InputConstants.RELEASE);
+            *///?} else {
+            /*Class<?>[] types = {long.class, int.class, int.class, int.class};
+            invoke(client.mouseHandler, "onPress", types, window, button, InputConstants.PRESS, modifiers);
+            invoke(client.mouseHandler, "onPress", types, window, button, InputConstants.RELEASE, modifiers);
+            *///?}
         });
     }
 
@@ -184,14 +232,17 @@ public final class ClientTestContext {
         runOnClient(client -> {
             Window window = client.getWindow();
             double scale = (double) window.getScreenWidth() / window.getGuiScaledWidth();
-            client.mouseHandler.onMove(window.handle(), x * scale, y * scale, 0, 0);
+            //? if >=26.3 {
+            client.mouseHandler.onMove(windowHandle(client), x * scale, y * scale, 0, 0);
+            //?} else
+            //invoke(client.mouseHandler, "onMove", new Class<?>[] {long.class, double.class, double.class}, windowHandle(client), x * scale, y * scale);
         });
     }
 
     /** Moves the cursor over a slot of the open container screen and waits until the screen reports it hovered. */
     public void hoverSlot(Predicate<Slot> which) {
         double[] position = computeOnClient(client -> {
-            AbstractContainerScreen<?> screen = (AbstractContainerScreen<?>) client.gui.screen();
+            AbstractContainerScreen<?> screen = (AbstractContainerScreen<?>) screen(client);
             Slot slot = screen.getMenu().slots.stream().filter(which).findFirst()
                     .orElseThrow(() -> new AssertionError("No such slot on " + screen));
             return new double[] {intField(LEFT_POS, screen) + slot.x + 8, intField(TOP_POS, screen) + slot.y + 8};
@@ -199,7 +250,7 @@ public final class ClientTestContext {
         setCursorGui(position[0], position[1]);
         // Hovering is worked out while rendering, so wait for a frame with the new position
         waitFor("the cursor to be over the slot", client -> {
-            Slot hovered = ((AbstractContainerScreenAccessor) client.gui.screen()).inventorywizard$getHoveredSlot();
+            Slot hovered = ((AbstractContainerScreenAccessor) screen(client)).inventorywizard$getHoveredSlot();
             return hovered != null && which.test(hovered);
         }, Duration.ofSeconds(5));
     }
@@ -207,9 +258,9 @@ public final class ClientTestContext {
     /** Option buttons are labelled "Caption: Value", so find them by the start of their text. */
     public void clickWidget(String labelPrefix) {
         double[] position = computeOnClient(client -> {
-            AbstractWidget widget = findWidget(client.gui.screen(), labelPrefix);
+            AbstractWidget widget = findWidget(screen(client), labelPrefix);
             if (widget == null) {
-                throw new AssertionError("No widget labelled '" + labelPrefix + "...' on " + client.gui.screen());
+                throw new AssertionError("No widget labelled '" + labelPrefix + "...' on " + screen(client));
             }
             return new double[] {widget.getX() + widget.getWidth() / 2.0, widget.getY() + widget.getHeight() / 2.0};
         });
@@ -232,6 +283,48 @@ public final class ClientTestContext {
             }
         }
         return null;
+    }
+
+    // ---- version differences ------------------------------------------------------------
+
+    /** The open screen, which Minecraft keeps in Gui since 26.2. */
+    static Screen screen(Minecraft client) {
+        //? if >=26.2 {
+        return client.gui.screen();
+        //?} else
+        //return client.screen;
+    }
+
+    private static void showScreen(Minecraft client, Screen screen) {
+        //? if >=26.2 {
+        client.gui.setScreen(screen);
+        //?} else
+        //client.setScreen(screen);
+    }
+
+    /** Whether the loading overlay (resource reload) is still up. */
+    private static boolean isLoading(Minecraft client) {
+        //? if >=26.2 {
+        return client.gui.overlay() != null;
+        //?} else
+        //return client.getOverlay() != null;
+    }
+
+    private static long windowHandle(Minecraft client) {
+        //? if >=1.21.9 {
+        return client.getWindow().handle();
+        //?} else
+        //return client.getWindow().getWindow();
+    }
+
+    private static void invoke(Object target, String name, Class<?>[] types, Object... args) {
+        try {
+            Method method = target.getClass().getDeclaredMethod(name, types);
+            method.setAccessible(true);
+            method.invoke(target, args);
+        } catch (ReflectiveOperationException e) {
+            throw new AssertionError("Could not call " + target.getClass().getSimpleName() + "." + name, e);
+        }
     }
 
     // ---- plumbing ---------------------------------------------------------------------

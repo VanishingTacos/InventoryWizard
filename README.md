@@ -6,7 +6,7 @@ A client-side mod for Fabric, Quilt, NeoForge and Forge that sorts your inventor
 
 ![Downloads](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/VanishingTacos/InventoryWizard/badges/downloads.json)
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
-![Minecraft](https://img.shields.io/badge/minecraft-26.3-green.svg)
+![Minecraft](https://img.shields.io/badge/minecraft-1.21--26.3-green.svg)
 ![Fabric](https://img.shields.io/badge/loader-Fabric-orange.svg)
 ![Quilt](https://img.shields.io/badge/loader-Quilt-purple.svg)
 ![NeoForge](https://img.shields.io/badge/loader-NeoForge-red.svg)
@@ -30,11 +30,11 @@ Need help, found a bug or have an idea? Join the Discord!
 - **Works on** the inventory, hotbar, chests, barrels, shulker boxes and ender chests
 
 ## Quick Start
-1. Download the jar for your loader from the [releases page](https://github.com/VanishingTacos/inventorywizard/releases) (Fabric/Quilt also needs [Fabric API](https://modrinth.com/mod/fabric-api))
+1. Download the jar for your loader and Minecraft version (`InventoryWizard-<loader>-<version>+<minecraft>.jar`) from the [releases page](https://github.com/VanishingTacos/inventorywizard/releases) (Fabric/Quilt also needs [Fabric API](https://modrinth.com/mod/fabric-api))
 2. Drop it into `.minecraft/mods` (or `plugins` for Paper/Spigot)
 3. Press **`R`** or **Shift+Right Click** in any inventory to sort
 
-Requires Minecraft 26.3 and Java 25+. The client mod only sorts in singleplayer and LAN worlds you host; use the Paper plugin for servers.
+Supports Minecraft 1.21 through 26.3 (Java 21+, or Java 25+ on 26.x). The client mod only sorts in singleplayer and LAN worlds you host; use the Paper plugin for servers.
 
 ## 📖 Documentation
 Everything else lives in the **[Wiki](https://github.com/VanishingTacos/InventoryWizard/wiki)**:

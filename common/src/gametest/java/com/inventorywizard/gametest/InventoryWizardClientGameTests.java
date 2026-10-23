@@ -5,6 +5,8 @@ import com.inventorywizard.InventoryWizardConfig;
 import com.inventorywizard.InventoryWizardConfigScreen;
 import com.inventorywizard.SortMode;
 import com.mojang.blaze3d.platform.InputConstants;
+//? if <1.21.9
+//import net.minecraft.client.KeyMapping;
 import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.gui.screens.inventory.ContainerScreen;
@@ -43,6 +45,8 @@ import java.util.function.Predicate;
 final class InventoryWizardClientGameTests {
 
     private static final int SORT_KEY = InputConstants.KEY_R;
+    //? if <1.21.9
+    //private static final int CYCLE_MODE_KEY = InputConstants.KEY_M;
     private static final int SORT_WAIT_TICKS = 5;
 
     private InventoryWizardClientGameTests() {}
@@ -148,7 +152,21 @@ final class InventoryWizardClientGameTests {
         List<String> before = inventoryRange(context, 0, 36);
 
         context.hoverSlot(inventorySlot(4));
+        //? if >=1.21.9 {
         shiftRightClick(context);
+        //?} else {
+        /*// No simulated Shift before 1.21.9 (see shiftRightClick); the cycle mode key does the same
+        context.runOnClient(client -> {
+            InventoryWizard.CYCLE_MODE_KEY.setKey(InputConstants.Type.KEYSYM.getOrCreate(CYCLE_MODE_KEY));
+            KeyMapping.resetMapping();
+        });
+        context.pressKey(CYCLE_MODE_KEY);
+        context.waitTicks(SORT_WAIT_TICKS);
+        context.runOnClient(client -> {
+            InventoryWizard.CYCLE_MODE_KEY.setKey(InputConstants.UNKNOWN);
+            KeyMapping.resetMapping();
+        });
+        *///?}
 
         SortMode mode = context.computeOnClient(client -> InventoryWizard.config().sortMode);
         assertEquals("mode after Shift+Right-click on hotbar slot 4", SortMode.ALPHABETICAL, mode);
@@ -270,8 +288,15 @@ final class InventoryWizardClientGameTests {
         context.waitTicks(3);
     }
 
+    /**
+     * Before 1.21.9 Minecraft reads Shift from the real keyboard rather than the click, so a simulated
+     * Shift+Right-click is impossible there; the sort key over the same slot runs the same sort.
+     */
     private static void shiftRightClick(ClientTestContext context) {
+        //? if >=1.21.9 {
         context.click(InputConstants.MOUSE_BUTTON_RIGHT, InputConstants.MOD_SHIFT);
+        //?} else
+        //context.pressKey(SORT_KEY);
         context.waitTicks(SORT_WAIT_TICKS);
     }
 

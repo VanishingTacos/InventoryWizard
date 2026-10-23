@@ -1,7 +1,9 @@
 package com.inventorywizard.platform;
 
+//? if >=1.21.9 {
 import net.minecraft.client.KeyMapping;
 import net.minecraft.resources.Identifier;
+//?}
 
 import java.nio.file.Path;
 import java.util.List;
@@ -28,5 +30,6 @@ public interface Platform {
     List<String> modrinthLoaders();
 
     /** Creates the key mapping category in whatever way this loader wants it registered. */
+    //? if >=1.21.9
     KeyMapping.Category keyMappingCategory(Identifier id);
 }

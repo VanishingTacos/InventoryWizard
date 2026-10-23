@@ -2,7 +2,7 @@
 # load as a mod next to InventoryWizard. Forge loads a classes folder without a mods.toml as a
 # plain library on the boot class loader, where it cannot link against the mod.
 modLoader = "lowcodefml"
-loaderVersion = "[66,)"
+loaderVersion = "[${forge_loader_major},)"
 license = "MIT"
 
 [[mods]]
