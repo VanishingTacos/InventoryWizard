@@ -1,6 +1,8 @@
 # Builds the Fabric, NeoForge and Forge jars for every Minecraft version, plus the Paper jar, on every push and PR.
 # Pushes to main also (re)create a draft release named after `version` in gradle.properties,
 # with release notes made from the conventional commits since the previous release tag.
+# Running it by hand on main with any of the curseforge/modrinth/hangar boxes ticked also uploads the jars there
+# (see .github/scripts/publish.sh), using that release's notes as the changelog.
 name: Build & Draft Release
 
 on:
@@ -8,6 +10,19 @@ on:
     branches: [main]
   pull_request:
   workflow_dispatch:
+    inputs:
+      curseforge:
+        description: Upload the Fabric, NeoForge and Forge jars to CurseForge
+        type: boolean
+        default: false
+      modrinth:
+        description: Upload every jar to Modrinth
+        type: boolean
+        default: false
+      hangar:
+        description: Upload the Paper jar to Hangar
+        type: boolean
+        default: false
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -157,3 +172,42 @@ jobs:
             --title "$TAG" \
             --target "$GITHUB_SHA" \
             --notes-file notes.md
+
+  publish:
+    needs: [build, release]
+    if: >-
+      github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
+      && (inputs.curseforge || inputs.modrinth || inputs.hangar)
+    runs-on: ubuntu-latest
+    permissions:
+      # Writing is needed to read a draft release's notes
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      VERSION: ${{ needs.build.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: InventoryWizard-${{ needs.build.outputs.version }}
+          path: dist
+
+      # The release job may have skipped an already published release, so read the notes back from GitHub
+      - name: Read release notes
+        run: gh release view "$TAG_PREFIX$VERSION" --json body --jq .body > notes.md
+
+      - name: Upload to CurseForge, Modrinth and Hangar
+        env:
+          CHANGELOG_FILE: notes.md
+          CURSEFORGE_TOKEN: ${{ secrets.CURSEFORGE_TOKEN }}
+          MODRINTH_TOKEN: ${{ secrets.MODRINTH_TOKEN }}
+          HANGAR_API_KEY: ${{ secrets.HANGAR_API_KEY }}
+          PLATFORMS: >-
+            ${{ inputs.curseforge && 'curseforge' || '' }}
+            ${{ inputs.modrinth && 'modrinth' || '' }}
+            ${{ inputs.hangar && 'hangar' || '' }}
+        run: |
+          # Word splitting turns PLATFORMS into one argument per platform
+          # shellcheck disable=SC2086
+          bash .github/scripts/publish.sh $PLATFORMS
