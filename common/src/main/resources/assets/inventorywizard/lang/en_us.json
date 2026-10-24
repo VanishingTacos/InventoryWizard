@@ -19,6 +19,8 @@
 	"inventorywizard.message.mode_changed": "🔄 Sorting mode changed to: %s",
 	"inventorywizard.message.disabled": "That kind of sorting is turned off in the InventoryWizard config.",
 	"inventorywizard.message.unsupported_container": "InventoryWizard can't sort this container.",
+	"inventorywizard.message.slot_locked": "🔒 Slot locked: sorting will leave it alone",
+	"inventorywizard.message.slot_unlocked": "🔓 Slot unlocked",
 	"inventorywizard.message.singleplayer_only": "InventoryWizard only works in singleplayer worlds (or as the LAN host).",
 	"inventorywizard.button.sort_container": "Sort container",
 	"inventorywizard.button.sort_inventory": "Sort inventory",

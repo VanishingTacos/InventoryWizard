@@ -10,10 +10,12 @@ import java.io.Reader;
 import java.io.Writer;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Set;
+import java.util.TreeSet;
 
 /**
  * Settings stored in config/inventorywizard.json. Replaces the plugin's config.yml
- * and the per-player H2 database (the only per-player value was the sort mode).
+ * and the per-player H2 database (the per-player values are the sort mode and locked slots).
  */
 public class InventoryWizardConfig {
 
@@ -35,6 +37,9 @@ public class InventoryWizardConfig {
     public boolean allowPartialStacksInventory = true;
 
     public HotbarPriorities hotbarPriorities = new HotbarPriorities();
+
+    /** Player inventory slots (0-8 hotbar, 9-35 main) that sorting never moves. Toggled with Alt+click. */
+    public Set<Integer> lockedSlots = new TreeSet<>();
 
     /** Look up the newest release on Modrinth at startup and mention it in chat. */
     public boolean checkForUpdates = true;
@@ -98,5 +103,6 @@ public class InventoryWizardConfig {
         if (sound.id == null) sound.id = new Sound().id;
         if (features == null) features = new Features();
         if (hotbarPriorities == null) hotbarPriorities = new HotbarPriorities();
+        if (lockedSlots == null) lockedSlots = new TreeSet<>();
     }
 }

@@ -57,6 +57,11 @@ public class InputValidator {
         return modeId;
     }
     
+    /** Lockable slots are the player inventory's hotbar (0-8) and main inventory (9-35). */
+    public static boolean isValidLockedSlot(int slot) {
+        return slot >= 0 && slot < 36;
+    }
+
     /**
      * Validate timestamp
      * @param timestamp The timestamp to validate

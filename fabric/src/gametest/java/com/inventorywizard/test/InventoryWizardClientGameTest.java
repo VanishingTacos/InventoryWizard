@@ -61,6 +61,14 @@ public class InventoryWizardClientGameTest implements FabricClientGameTest {
 
     private static final int SORT_KEY = InputConstants.KEY_R;
     private static final int SORT_WAIT_TICKS = 5;
+    //? if >=1.21.9 {
+    private static final int MOD_SHIFT = InputConstants.MOD_SHIFT;
+    private static final int MOD_ALT = InputConstants.MOD_ALT;
+    //?} else {
+    /*// Not part of a click before 1.21.9: holding the key is what counts
+    private static final int MOD_SHIFT = 0;
+    private static final int MOD_ALT = 0;
+    *///?}
     private static final String SORT_INVENTORY_BUTTON = "Sort inventory";
     private static final String SORT_CONTAINER_BUTTON = "Sort container";
     private static final String MODE_BUTTON = "Change sort mode";
@@ -93,6 +101,7 @@ public class InventoryWizardClientGameTest implements FabricClientGameTest {
             testSortKeyOnHotbar(context, server);
             testCycleModeSlot(context, server);
             testPartialStacksOff(context, server);
+            testLockedSlots(context, server);
             testBlockContainer(context, server, Blocks.CHEST, new BlockPos(2, 0, 0), ContainerScreen.class, Input.SORT_KEY_NO_HOVER, "chest");
             testBlockContainer(context, server, Blocks.BARREL, new BlockPos(0, 0, 2), ContainerScreen.class, Input.SHIFT_RIGHT_CLICK, "barrel");
             testBlockContainer(context, server, Blocks.SHULKER_BOX, new BlockPos(0, 0, -2), ShulkerBoxScreen.class, Input.SORT_KEY_HOVER, "shulker_box");
@@ -226,6 +235,57 @@ public class InventoryWizardClientGameTest implements FabricClientGameTest {
         assertEquals("partial stacks off keeps every item", before, totals(server));
 
         context.runOnClient(client -> InventoryWizard.config().allowPartialStacksInventory = true);
+        closeScreen(context);
+    }
+
+    private static void testLockedSlots(ClientGameTestContext context, TestServerContext server) {
+        context.runOnClient(client -> InventoryWizard.config().lockedSlots.clear());
+        server.runOnServer(s -> {
+            Inventory inv = player(s).getInventory();
+            inv.clearContent();
+            inv.setItem(0, new ItemStack(Items.BREAD, 3));
+            inv.setItem(2, new ItemStack(Items.COBBLESTONE, 10));
+            inv.setItem(5, new ItemStack(Items.DIAMOND_PICKAXE));
+            inv.setItem(7, new ItemStack(Items.IRON_SWORD));
+            inv.setItem(8, new ItemStack(Items.TOTEM_OF_UNDYING));
+            inv.setItem(9, new ItemStack(Items.DIAMOND_SWORD));
+            inv.setItem(15, new ItemStack(Items.STONE, 10));
+            inv.setItem(20, new ItemStack(Items.DIRT, 20));
+            inv.setItem(30, new ItemStack(Items.DIRT, 30));
+        });
+        Map<String, Integer> before = totals(server);
+
+        openInventory(context);
+        for (int slot : new int[] {5, 8, 9, 20}) {
+            hoverSlot(context, inventorySlot(slot));
+            altClick(context);
+        }
+        // A second Alt+click unlocks again
+        hoverSlot(context, inventorySlot(20));
+        altClick(context);
+        context.takeScreenshot("inventorywizard-locked-slots");
+        pace(context);
+
+        Object locked = context.computeOnClient(client -> List.copyOf(InventoryWizard.config().lockedSlots));
+        assertEquals("slots locked by Alt+click", List.of(5, 8, 9), locked);
+        assertEquals("Alt+click must not pick items up", before, totals(server));
+
+        hoverSlot(context, inventorySlot(1));
+        context.getInput().pressKey(SORT_KEY);
+        context.waitTicks(SORT_WAIT_TICKS);
+
+        assertEquals("hotbar sort skips locked slots",
+                List.of("iron_sword x1", "bread x3", "cobblestone x10", "-", "-", "diamond_pickaxe x1", "-", "-", "totem_of_undying x1"),
+                inventoryRange(server, 0, 9));
+        List<String> main = inventoryRange(server, 9, 36);
+        assertPrefix("inventory sort skips locked slots", main, "diamond_sword x1", "stone x10", "dirt x50");
+        assertEmptyFrom("inventory sort skips locked slots", main, 3);
+        assertEquals("item totals after sorting around locked slots", before, totals(server));
+
+        context.runOnClient(client -> {
+            InventoryWizard.config().lockedSlots.clear();
+            InventoryWizard.config().save();
+        });
         closeScreen(context);
     }
 
@@ -417,17 +477,30 @@ public class InventoryWizardClientGameTest implements FabricClientGameTest {
         context.waitTicks(3);
     }
 
-    /**
-     * Since 1.21.9 Shift comes from the click's modifiers, and TestInput.pressMouse always sends
-     * modifiers = 0, so feed the mouse handler a click carrying the Shift modifier like a real
-     * Shift+Right-click does. Before that, holding Shift is enough.
-     */
     private static void shiftRightClick(ClientGameTestContext context) {
         context.getInput().holdShift();
+        clickWithModifiers(context, InputConstants.MOUSE_BUTTON_RIGHT, MOD_SHIFT);
+        context.getInput().releaseShift();
+        context.waitTicks(SORT_WAIT_TICKS);
+    }
+
+    private static void altClick(ClientGameTestContext context) {
+        context.getInput().holdAlt();
+        clickWithModifiers(context, InputConstants.MOUSE_BUTTON_LEFT, MOD_ALT);
+        context.getInput().releaseAlt();
+        context.waitTicks(2);
+    }
+
+    /**
+     * Since 1.21.9 modifiers come from the click itself, and TestInput.pressMouse always sends
+     * modifiers = 0, so feed the mouse handler a click carrying them like a real Shift+ or Alt+click
+     * does. Before that, holding the key (done by the caller) is enough.
+     */
+    private static void clickWithModifiers(ClientGameTestContext context, int button, int modifiers) {
         //? if >=26.3 {
         context.runOnClient(client -> {
             long window = client.getWindow().handle();
-            MouseButtonInfo click = new MouseButtonInfo(InputConstants.MOUSE_BUTTON_RIGHT, InputConstants.MOD_SHIFT);
+            MouseButtonInfo click = new MouseButtonInfo(button, modifiers);
             client.mouseHandler.onButton(window, click, InputConstants.PRESS);
             client.mouseHandler.onButton(window, click, InputConstants.RELEASE);
         });
@@ -435,7 +508,7 @@ public class InventoryWizardClientGameTest implements FabricClientGameTest {
         /*// MouseHandler.onButton is private before 26.3
         context.runOnClient(client -> {
             long window = client.getWindow().handle();
-            MouseButtonInfo click = new MouseButtonInfo(InputConstants.MOUSE_BUTTON_RIGHT, InputConstants.MOD_SHIFT);
+            MouseButtonInfo click = new MouseButtonInfo(button, modifiers);
             try {
                 Method onButton = client.mouseHandler.getClass().getDeclaredMethod("onButton", long.class, MouseButtonInfo.class, int.class);
                 onButton.setAccessible(true);
@@ -446,9 +519,7 @@ public class InventoryWizardClientGameTest implements FabricClientGameTest {
             }
         });
         *///?} else
-        //context.getInput().pressMouse(InputConstants.MOUSE_BUTTON_RIGHT);
-        context.getInput().releaseShift();
-        context.waitTicks(SORT_WAIT_TICKS);
+        //context.getInput().pressMouse(button);
     }
 
     private static void sortOpenContainer(ClientGameTestContext context, Input input) {

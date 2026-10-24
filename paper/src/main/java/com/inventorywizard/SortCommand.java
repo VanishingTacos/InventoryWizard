@@ -8,6 +8,7 @@ import org.bukkit.entity.Player;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public class SortCommand implements CommandExecutor, TabCompleter {
@@ -45,7 +46,7 @@ public class SortCommand implements CommandExecutor, TabCompleter {
                 }
                 
                 PlayerDataManager.SortMode mode = plugin.getPlayerDataManager().getPlayerSortMode(player);
-                plugin.sort(player, () -> InventorySorter.sortHotbar(player, mode, plugin.getHotbarPriorities()),
+                plugin.sort(player, () -> InventorySorter.sortHotbar(player, mode, plugin.getHotbarPriorities(), lockedSlots(player)),
                         0.2f, "§6✨ Hotbar enchanted by the InventoryWizard! (" + mode.getDisplayName() + ")");
                 break;
                 
@@ -61,7 +62,7 @@ public class SortCommand implements CommandExecutor, TabCompleter {
                 }
                 
                 PlayerDataManager.SortMode invMode = plugin.getPlayerDataManager().getPlayerSortMode(player);
-                plugin.sort(player, () -> InventorySorter.sortPlayerInventory(player, invMode, plugin.allowPartialStacksInInventory()),
+                plugin.sort(player, () -> InventorySorter.sortPlayerInventory(player, invMode, plugin.allowPartialStacksInInventory(), lockedSlots(player)),
                         0f, "§a✨ Inventory magically organized! (" + invMode.getDisplayName() + ")");
                 break;
                 
@@ -79,16 +80,21 @@ public class SortCommand implements CommandExecutor, TabCompleter {
                 }
                 
                 PlayerDataManager.SortMode allMode = plugin.getPlayerDataManager().getPlayerSortMode(player);
+                Set<Integer> allLocked = lockedSlots(player);
                 plugin.sort(player, () -> {
                     if (inventory) {
-                        InventorySorter.sortPlayerInventory(player, allMode, plugin.allowPartialStacksInInventory());
+                        InventorySorter.sortPlayerInventory(player, allMode, plugin.allowPartialStacksInInventory(), allLocked);
                     }
                     if (hotbar) {
-                        InventorySorter.sortHotbar(player, allMode, plugin.getHotbarPriorities());
+                        InventorySorter.sortHotbar(player, allMode, plugin.getHotbarPriorities(), allLocked);
                     }
                 }, -0.2f, "§b🧙✨ Complete inventory transformation complete! (" + allMode.getDisplayName() + ")");
                 break;
                 
+            case "lock":
+                lock(player, args);
+                break;
+
             case "regen-credentials":
                 if (!player.hasPermission("inventorywizard.admin")) {
                     player.sendMessage("§c🧙✨ " + ErrorHandler.getPermissionErrorMessage());
@@ -156,22 +162,69 @@ public class SortCommand implements CommandExecutor, TabCompleter {
 
                 
             default:
-                player.sendMessage("§e🧙✨ InventoryWizard Usage: §f/iwiz [hotbar|inventory|all]");
+                player.sendMessage("§e🧙✨ InventoryWizard Usage: §f/iwiz [hotbar|inventory|all|lock]");
                 player.sendMessage("§7Cast your sorting spells with: hotbar, inventory, or all");
+                player.sendMessage("§7Keep a slot in place with: lock [slot|list|clear]");
                 return true;
         }
         
         return true;
     }
     
+    private Set<Integer> lockedSlots(Player player) {
+        return plugin.getPlayerDataManager().getLockedSlots(player);
+    }
+
+    /**
+     * {@code /iwiz lock} toggles the held hotbar slot, {@code /iwiz lock <slot>} any inventory slot
+     * (0-8 hotbar, 9-35 main inventory, the numbering Bukkit uses). A server can't see Alt+click.
+     */
+    private void lock(Player player, String[] args) {
+        PlayerDataManager preferences = plugin.getPlayerDataManager();
+        String arg = args.length > 1 ? args[1].toLowerCase() : null;
+
+        if ("list".equals(arg)) {
+            Set<Integer> locked = preferences.getLockedSlots(player);
+            player.sendMessage(locked.isEmpty()
+                    ? "§e🔓 No locked slots."
+                    : "§e🔒 Locked slots: §f" + locked.stream().map(String::valueOf).collect(Collectors.joining(", ")));
+            return;
+        }
+        if ("clear".equals(arg)) {
+            preferences.setLockedSlots(player, Set.of());
+            player.sendMessage("§a🔓 All slots unlocked.");
+            return;
+        }
+
+        int slot;
+        if (arg == null) {
+            slot = player.getInventory().getHeldItemSlot();
+        } else {
+            try {
+                slot = Integer.parseInt(arg);
+            } catch (NumberFormatException e) {
+                slot = -1;
+            }
+            if (!InputValidator.isValidLockedSlot(slot)) {
+                player.sendMessage("§c🧙✨ Usage: §f/iwiz lock [slot|list|clear]§c, slot 0-8 is the hotbar and 9-35 the inventory.");
+                return;
+            }
+        }
+
+        boolean locked = preferences.toggleLockedSlot(player, slot);
+        player.sendMessage(locked
+                ? "§a🔒 Slot " + slot + " locked: sorting will leave it alone."
+                : "§e🔓 Slot " + slot + " unlocked.");
+    }
+
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         if (args.length == 1) {
-            List<String> options = Arrays.asList("hotbar", "inventory", "all");
+            List<String> options = Arrays.asList("hotbar", "inventory", "all", "lock");
             
             // Add admin commands for admins
             if (sender.hasPermission("inventorywizard.admin")) {
-                options = Arrays.asList("hotbar", "inventory", "all", "regen-credentials", "rate-limit", "reset-rate-limit", "rate-limit-enabled");
+                options = Arrays.asList("hotbar", "inventory", "all", "lock", "regen-credentials", "rate-limit", "reset-rate-limit", "rate-limit-enabled");
             }
             
             return options.stream()
@@ -179,6 +232,12 @@ public class SortCommand implements CommandExecutor, TabCompleter {
                     .collect(Collectors.toList());
         }
         
+        if (args.length == 2 && args[0].equalsIgnoreCase("lock")) {
+            return Arrays.asList("list", "clear").stream()
+                    .filter(s -> s.startsWith(args[1].toLowerCase()))
+                    .collect(Collectors.toList());
+        }
+
         // tab completion for rate-limit-enabled subcommand
         if (args.length == 2 && args[0].equalsIgnoreCase("rate-limit-enabled") && sender.hasPermission("inventorywizard.admin")) {
             // suggest online player names

@@ -61,7 +61,7 @@ public final class InventoryWizard {
         if (config.checkForUpdates) {
             UpdateChecker.start();
         }
-        LOGGER.info("InventoryWizard has awakened! Sort key, Shift+Right-click or /iwiz [hotbar|inventory|all|mode]");
+        LOGGER.info("InventoryWizard has awakened! Sort key, Shift+Right-click or /iwiz [hotbar|inventory|all|mode]; Alt+click locks a slot");
     }
 
     /** Outside of screens: sort inventory + hotbar, or cycle the mode. */
@@ -118,24 +118,36 @@ public final class InventoryWizard {
         }
     }
 
-    /** Returns true when the click was used for sorting and vanilla handling should be cancelled. */
+    /**
+     * Returns true when the click was used for sorting (Shift+Right-click) or locking a slot (Alt+Left-click)
+     * and vanilla handling should be cancelled.
+     */
     //? if >=1.21.9 {
     public static boolean onMouseClick(Minecraft client, AbstractContainerScreen<?> screen, MouseButtonEvent event) {
-        if (event.button() != InputConstants.MOUSE_BUTTON_RIGHT || !event.hasShiftDown()) {
-            return false;
-        }
+        boolean sortClick = event.button() == InputConstants.MOUSE_BUTTON_RIGHT && event.hasShiftDown();
+        boolean lockClick = event.button() == InputConstants.MOUSE_BUTTON_LEFT && event.hasAltDown();
     //?} else {
     /*public static boolean onMouseClick(Minecraft client, AbstractContainerScreen<?> screen, int button) {
-        if (button != InputConstants.MOUSE_BUTTON_RIGHT || !Screen.hasShiftDown()) {
+        boolean sortClick = button == InputConstants.MOUSE_BUTTON_RIGHT && Screen.hasShiftDown();
+        boolean lockClick = button == InputConstants.MOUSE_BUTTON_LEFT && Screen.hasAltDown();
+    *///?}
+        if (!sortClick && !lockClick) {
             return false;
         }
-    *///?}
         // On a remote server there is nothing to sort with here; let the click through so vanilla
         // shift-clicking works and a server-side sorter (like the InventoryWizard Paper plugin) gets it
         if (client.getSingleplayerServer() == null) {
             return false;
         }
         Slot slot = hoveredSlot(screen);
+        if (lockClick) {
+            if (slot == null || !SortActions.isLockableSlot(slot)) {
+                return false;
+            }
+            SortActions.toggleLock(client, slot);
+            return true;
+        }
+
         AbstractContainerMenu menu = screen.getMenu();
         if (slot == null || !SortActions.isSortableSlot(menu, slot)) {
             return false;

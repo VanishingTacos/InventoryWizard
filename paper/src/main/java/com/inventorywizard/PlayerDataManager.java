@@ -2,7 +2,10 @@ package com.inventorywizard;
 
 import org.bukkit.entity.Player;
 
+import java.util.Collections;
 import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
@@ -57,6 +60,8 @@ public class PlayerDataManager {
     // background, so clicks never wait on the database; without H2 they are lost on restart.
     private final Map<UUID, SortMode> sortModes = new ConcurrentHashMap<>();
     private final Map<UUID, Boolean> rateLimited = new ConcurrentHashMap<>();
+    // Values are never changed in place, only replaced, so a sort can keep using the set it read
+    private final Map<UUID, Set<Integer>> lockedSlots = new ConcurrentHashMap<>();
 
     // Every database call runs on this one thread, so the shared connection is never used concurrently
     private ExecutorService databaseThread;
@@ -87,6 +92,7 @@ public class PlayerDataManager {
             // putIfAbsent: a change made while this was loading wins over the stored value
             sortModes.putIfAbsent(player.getUniqueId(), database.getPlayerSortMode(player));
             rateLimited.putIfAbsent(player.getUniqueId(), database.getPlayerRateLimitEnabled(player));
+            lockedSlots.putIfAbsent(player.getUniqueId(), Collections.unmodifiableSet(database.getPlayerLockedSlots(player)));
         });
     }
 
@@ -94,6 +100,7 @@ public class PlayerDataManager {
     public void forget(Player player) {
         sortModes.remove(player.getUniqueId());
         rateLimited.remove(player.getUniqueId());
+        lockedSlots.remove(player.getUniqueId());
     }
 
     public SortMode getPlayerSortMode(Player player) {
@@ -140,6 +147,39 @@ public class PlayerDataManager {
         rateLimited.put(player.getUniqueId(), enabled);
         if (database != null) {
             databaseThread.execute(() -> database.setPlayerRateLimitEnabled(player, enabled));
+        }
+    }
+
+    /** Player inventory slots (0-8 hotbar, 9-35 main inventory) that sorting leaves alone. */
+    public Set<Integer> getLockedSlots(Player player) {
+        Set<Integer> cached = lockedSlots.get(player.getUniqueId());
+        if (cached != null) {
+            return cached;
+        }
+        if (database == null) {
+            return Set.of();
+        }
+        Set<Integer> loaded = Collections.unmodifiableSet(onDatabaseThread(() -> database.getPlayerLockedSlots(player), new TreeSet<>()));
+        Set<Integer> previous = lockedSlots.putIfAbsent(player.getUniqueId(), loaded);
+        return previous != null ? previous : loaded;
+    }
+
+    /** Locks the slot if it was unlocked and the other way round; returns whether it is now locked. */
+    public boolean toggleLockedSlot(Player player, int slot) {
+        Set<Integer> updated = new TreeSet<>(getLockedSlots(player));
+        boolean locked = updated.add(slot);
+        if (!locked) {
+            updated.remove(slot);
+        }
+        setLockedSlots(player, updated);
+        return locked;
+    }
+
+    public void setLockedSlots(Player player, Set<Integer> slots) {
+        Set<Integer> stored = Collections.unmodifiableSet(new TreeSet<>(slots));
+        lockedSlots.put(player.getUniqueId(), stored);
+        if (database != null) {
+            databaseThread.execute(() -> database.setPlayerLockedSlots(player, stored));
         }
     }
 

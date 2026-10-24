@@ -68,6 +68,7 @@ final class InventoryWizardClientGameTests {
         test("sort key on hotbar", () -> testSortKeyOnHotbar(context));
         test("cycle mode slot", () -> testCycleModeSlot(context));
         test("partial stacks off", () -> testPartialStacksOff(context));
+        test("locked slots", () -> testLockedSlots(context));
         test("chest", () -> testBlockContainer(context, Blocks.CHEST, new BlockPos(2, 0, 0), ContainerScreen.class, Input.SORT_KEY_NO_HOVER, "chest"));
         test("barrel", () -> testBlockContainer(context, Blocks.BARREL, new BlockPos(0, 0, 2), ContainerScreen.class, Input.SHIFT_RIGHT_CLICK, "barrel"));
         test("shulker box", () -> testBlockContainer(context, Blocks.SHULKER_BOX, new BlockPos(0, 0, -2), ShulkerBoxScreen.class, Input.SORT_KEY_HOVER, "shulker_box"));
@@ -211,6 +212,61 @@ final class InventoryWizardClientGameTests {
         assertEquals("partial stacks off keeps every item", before, totals(context));
 
         context.runOnClient(client -> InventoryWizard.config().allowPartialStacksInventory = true);
+        closeScreen(context);
+    }
+
+    private static void testLockedSlots(ClientTestContext context) {
+        context.runOnClient(client -> InventoryWizard.config().lockedSlots.clear());
+        context.runOnServer(s -> {
+            Inventory inv = player(s).getInventory();
+            inv.clearContent();
+            inv.setItem(0, new ItemStack(Items.BREAD, 3));
+            inv.setItem(2, new ItemStack(Items.COBBLESTONE, 10));
+            inv.setItem(5, new ItemStack(Items.DIAMOND_PICKAXE));
+            inv.setItem(7, new ItemStack(Items.IRON_SWORD));
+            inv.setItem(8, new ItemStack(Items.TOTEM_OF_UNDYING));
+            inv.setItem(9, new ItemStack(Items.DIAMOND_SWORD));
+            inv.setItem(15, new ItemStack(Items.STONE, 10));
+            inv.setItem(20, new ItemStack(Items.DIRT, 20));
+            inv.setItem(30, new ItemStack(Items.DIRT, 30));
+        });
+        Map<String, Integer> before = totals(context);
+
+        openInventory(context);
+        //? if >=1.21.9 {
+        for (int slot : new int[] {5, 8, 9, 20}) {
+            context.hoverSlot(inventorySlot(slot));
+            context.click(InputConstants.MOUSE_BUTTON_LEFT, InputConstants.MOD_ALT);
+            context.waitTicks(2);
+        }
+        // A second Alt+click unlocks again
+        context.hoverSlot(inventorySlot(20));
+        context.click(InputConstants.MOUSE_BUTTON_LEFT, InputConstants.MOD_ALT);
+        context.waitTicks(2);
+        Object locked = context.computeOnClient(client -> List.copyOf(InventoryWizard.config().lockedSlots));
+        assertEquals("slots locked by Alt+click", List.of(5, 8, 9), locked);
+        assertEquals("Alt+click must not pick items up", before, totals(context));
+        //?} else {
+        /*// No simulated Alt before 1.21.9 (see shiftRightClick), so lock the slots directly
+        context.runOnClient(client -> InventoryWizard.config().lockedSlots.addAll(List.of(5, 8, 9)));
+        *///?}
+
+        context.hoverSlot(inventorySlot(1));
+        context.pressKey(SORT_KEY);
+        context.waitTicks(SORT_WAIT_TICKS);
+
+        assertEquals("hotbar sort skips locked slots",
+                List.of("iron_sword x1", "bread x3", "cobblestone x10", "-", "-", "diamond_pickaxe x1", "-", "-", "totem_of_undying x1"),
+                inventoryRange(context, 0, 9));
+        List<String> main = inventoryRange(context, 9, 36);
+        assertPrefix("inventory sort skips locked slots", main, "diamond_sword x1", "stone x10", "dirt x50");
+        assertEmptyFrom("inventory sort skips locked slots", main, 3);
+        assertEquals("item totals after sorting around locked slots", before, totals(context));
+
+        context.runOnClient(client -> {
+            InventoryWizard.config().lockedSlots.clear();
+            InventoryWizard.config().save();
+        });
         closeScreen(context);
     }
 

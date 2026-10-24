@@ -28,6 +28,7 @@ Need help, found a bug or have an idea? Join the Discord!
 - **Stacks merged**, but enchanted or named items are never combined
 - **Three modes**: Default, Alphabetical and Stack-based
 - **Sort buttons** in the inventory, chest and shulker box screens, plus one to switch modes
+- **Locked slots** that sorting never moves: **Alt+Click** a hotbar or inventory slot to lock it (`/iwiz lock [slot]` on Paper)
 - **Works on** the inventory, hotbar, chests, barrels, shulker boxes and ender chests
 
 ## Quick Start

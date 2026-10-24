@@ -5,7 +5,10 @@ import org.bukkit.plugin.Plugin;
 
 import java.io.File;
 import java.sql.*;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.logging.Level;
+import java.util.stream.Collectors;
 
 public class H2DatabaseManager {
     
@@ -77,6 +80,7 @@ public class H2DatabaseManager {
                     "uuid VARCHAR(36) PRIMARY KEY, " +
                     "sort_mode INT DEFAULT 0, " +
                     "rate_limit_enabled BOOLEAN DEFAULT TRUE, " +
+                    "locked_slots VARCHAR(255) DEFAULT '', " +
                     "last_updated BIGINT DEFAULT 0)";
         
         try (Statement stmt = connection.createStatement()) {
@@ -100,6 +104,7 @@ public class H2DatabaseManager {
         renameTableIfNeeded();
         // add rate_limit_enabled column if it doesn't exist (for migration)
         addRateLimitColumnIfMissing();
+        addLockedSlotsColumnIfMissing();
     }
     
     private void renameTableIfNeeded() throws SQLException {
@@ -134,6 +139,14 @@ public class H2DatabaseManager {
         }
     }
     
+    private void addLockedSlotsColumnIfMissing() {
+        try (Statement alterStmt = connection.createStatement()) {
+            alterStmt.execute("ALTER TABLE player_data ADD COLUMN IF NOT EXISTS locked_slots VARCHAR(255) DEFAULT ''");
+        } catch (SQLException e) {
+            plugin.getLogger().info("Locked slots column migration completed (column may already exist)");
+        }
+    }
+
     public PlayerDataManager.SortMode getPlayerSortMode(Player player) {
         // Validate input parameters
         if (!InputValidator.validatePlayer(player)) {
@@ -342,4 +355,70 @@ public class H2DatabaseManager {
         }
     }
 
+    /** Locked player inventory slots, stored as a comma-separated list such as "0,8,35". */
+    public Set<Integer> getPlayerLockedSlots(Player player) {
+        String uuid = InputValidator.validateUUID(player.getUniqueId().toString());
+        if (uuid == null) {
+            errorHandler.logValidationError("UUID format", player.getName(), player.getUniqueId().toString());
+            return new TreeSet<>();
+        }
+
+        String sql = "SELECT locked_slots FROM player_data WHERE uuid = ?";
+
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+            stmt.setString(1, uuid);
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return parseLockedSlots(rs.getString("locked_slots"));
+                }
+            }
+        } catch (SQLException e) {
+            errorHandler.logDatabaseError("get locked slots", player.getName(), e);
+        }
+
+        return new TreeSet<>();
+    }
+
+    public void setPlayerLockedSlots(Player player, Set<Integer> lockedSlots) {
+        String uuid = InputValidator.validateUUID(player.getUniqueId().toString());
+        if (uuid == null) {
+            errorHandler.logValidationError("UUID format", player.getName(), player.getUniqueId().toString());
+            return;
+        }
+
+        String value = lockedSlots.stream()
+                .filter(InputValidator::isValidLockedSlot)
+                .sorted()
+                .map(String::valueOf)
+                .collect(Collectors.joining(","));
+        String sql = "MERGE INTO player_data (uuid, locked_slots, last_updated) KEY (uuid) VALUES (?, ?, ?)";
+
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+            stmt.setString(1, uuid);
+            stmt.setString(2, value);
+            stmt.setLong(3, System.currentTimeMillis());
+            stmt.executeUpdate();
+        } catch (SQLException e) {
+            errorHandler.logDatabaseError("set locked slots", player.getName(), e);
+        }
+    }
+
+    private static Set<Integer> parseLockedSlots(String value) {
+        Set<Integer> slots = new TreeSet<>();
+        if (value == null || value.isBlank()) {
+            return slots;
+        }
+        for (String part : value.split(",")) {
+            try {
+                int slot = Integer.parseInt(part.trim());
+                if (InputValidator.isValidLockedSlot(slot)) {
+                    slots.add(slot);
+                }
+            } catch (NumberFormatException ignored) {
+                // Skip anything hand-edited into the column
+            }
+        }
+        return slots;
+    }
 }

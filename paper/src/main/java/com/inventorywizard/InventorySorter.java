@@ -28,7 +28,7 @@ public class InventorySorter {
     }
 
     public static void sortInventory(Inventory inventory, PlayerDataManager.SortMode mode, boolean allowPartialStacks) {
-        sortRange(inventory, 0, inventory.getSize(), mode, allowPartialStacks, null);
+        sortRange(inventory, 0, inventory.getSize(), Set.of(), mode, allowPartialStacks, null);
     }
 
     public static void sortPlayerInventory(Player player) {
@@ -44,8 +44,14 @@ public class InventorySorter {
     }
 
     public static void sortPlayerInventory(Player player, PlayerDataManager.SortMode mode, boolean allowPartialStacks) {
+        sortPlayerInventory(player, mode, allowPartialStacks, Set.of());
+    }
+
+    /** {@code lockedSlots} are player inventory slot numbers (0-35) that keep their item. */
+    public static void sortPlayerInventory(Player player, PlayerDataManager.SortMode mode, boolean allowPartialStacks,
+                                           Set<Integer> lockedSlots) {
         // Main inventory only (slots 9-35), excluding hotbar and armor
-        sortRange(player.getInventory(), 9, 36, mode, allowPartialStacks, null);
+        sortRange(player.getInventory(), 9, 36, lockedSlots, mode, allowPartialStacks, null);
     }
 
     public static void sortHotbar(Player player) {
@@ -57,19 +63,32 @@ public class InventorySorter {
     }
 
     public static void sortHotbar(Player player, PlayerDataManager.SortMode mode, HotbarPriorities priorities) {
+        sortHotbar(player, mode, priorities, Set.of());
+    }
+
+    public static void sortHotbar(Player player, PlayerDataManager.SortMode mode, HotbarPriorities priorities,
+                                  Set<Integer> lockedSlots) {
         PlayerInventory inventory = player.getInventory();
         // Always allow partial stacks in the hotbar, and use hotbar priorities even in default mode
-        sortRange(inventory, 0, 9, mode, true, priorities);
+        sortRange(inventory, 0, 9, lockedSlots, mode, true, priorities);
 
         // Update the player's inventory
         player.updateInventory();
     }
 
-    /** Sorts slots [start, end) in place. {@code hotbarPriorities} is null outside the hotbar. */
-    private static void sortRange(Inventory inventory, int start, int end, PlayerDataManager.SortMode mode,
-                                  boolean allowPartialStacks, HotbarPriorities hotbarPriorities) {
+    /**
+     * Sorts slots [start, end) in place; locked slots keep their item and are skipped over.
+     * {@code hotbarPriorities} is null outside the hotbar.
+     */
+    private static void sortRange(Inventory inventory, int start, int end, Set<Integer> lockedSlots,
+                                  PlayerDataManager.SortMode mode, boolean allowPartialStacks, HotbarPriorities hotbarPriorities) {
+        List<Integer> slots = new ArrayList<>();
         List<ItemStack> items = new ArrayList<>();
         for (int i = start; i < end; i++) {
+            if (lockedSlots.contains(i)) {
+                continue;
+            }
+            slots.add(i);
             ItemStack item = inventory.getItem(i);
             if (item != null && item.getType() != Material.AIR) {
                 items.add(item.clone());
@@ -78,13 +97,12 @@ public class InventorySorter {
 
         List<ItemStack> sortedItems = sort(items, mode, allowPartialStacks, hotbarPriorities);
         // Merging never adds stacks, but never risk deleting items if it somehow did
-        if (sortedItems.size() > end - start) {
+        if (sortedItems.size() > slots.size()) {
             return;
         }
 
-        for (int i = start; i < end; i++) {
-            int sortedIndex = i - start;
-            inventory.setItem(i, sortedIndex < sortedItems.size() ? sortedItems.get(sortedIndex) : null);
+        for (int i = 0; i < slots.size(); i++) {
+            inventory.setItem(slots.get(i), i < sortedItems.size() ? sortedItems.get(i) : null);
         }
     }
 

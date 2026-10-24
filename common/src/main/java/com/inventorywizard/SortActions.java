@@ -33,6 +33,7 @@ import net.minecraft.world.level.block.entity.ShulkerBoxBlockEntity;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
 
@@ -93,6 +94,27 @@ public final class SortActions {
         return menu instanceof ChestMenu || menu instanceof ShulkerBoxMenu;
     }
 
+    /** Player inventory slots (hotbar and main inventory) can be locked; containers are shared with other players. */
+    public static boolean isLockableSlot(Slot slot) {
+        return slot.container instanceof Inventory && slot.getContainerSlot() >= HOTBAR_START && slot.getContainerSlot() < INVENTORY_END;
+    }
+
+    public static boolean isLocked(Slot slot) {
+        return isLockableSlot(slot) && InventoryWizard.config().lockedSlots.contains(slot.getContainerSlot());
+    }
+
+    public static void toggleLock(Minecraft client, Slot slot) {
+        InventoryWizardConfig config = InventoryWizard.config();
+        int index = slot.getContainerSlot();
+        boolean locked = config.lockedSlots.add(index);
+        if (!locked) {
+            config.lockedSlots.remove(index);
+        }
+        config.save();
+        String key = locked ? "slot_locked" : "slot_unlocked";
+        show(client, new Feedback(Component.translatable("inventorywizard.message." + key), locked ? 0.4f : 0.2f));
+    }
+
     public static boolean isHotbarSlot(Slot slot) {
         return slot.container instanceof Inventory && slot.getContainerSlot() >= HOTBAR_START && slot.getContainerSlot() < INVENTORY_START;
     }
@@ -119,6 +141,8 @@ public final class SortActions {
     public static void sortPlayer(Minecraft client, PlayerTarget target) {
         InventoryWizardConfig config = InventoryWizard.config();
         SortMode mode = config.sortMode;
+        // Copied here: the sort runs on the server thread while the client may toggle locks
+        Set<Integer> locked = Set.copyOf(config.lockedSlots);
 
         runOnServer(client, player -> {
             boolean hotbar = target != PlayerTarget.INVENTORY && config.features.hotbarSorting;
@@ -129,10 +153,10 @@ public final class SortActions {
 
             Inventory playerInventory = player.getInventory();
             if (inventory) {
-                sortInventoryRange(playerInventory, INVENTORY_START, INVENTORY_END, mode, InventorySorter.Region.INVENTORY, config);
+                sortInventoryRange(playerInventory, INVENTORY_START, INVENTORY_END, locked, mode, InventorySorter.Region.INVENTORY, config);
             }
             if (hotbar) {
-                sortInventoryRange(playerInventory, HOTBAR_START, INVENTORY_START, mode, InventorySorter.Region.HOTBAR, config);
+                sortInventoryRange(playerInventory, HOTBAR_START, INVENTORY_START, locked, mode, InventorySorter.Region.HOTBAR, config);
             }
             player.containerMenu.broadcastChanges();
 
@@ -193,20 +217,24 @@ public final class SortActions {
         show(client, new Feedback(Component.translatable("inventorywizard.message.mode_changed", config.sortMode.displayName()), 0.4f));
     }
 
-    private static void sortInventoryRange(Inventory inventory, int start, int end, SortMode mode,
+    /** Sorts slots [start, end) in place; locked slots keep their item and are skipped over. */
+    private static void sortInventoryRange(Inventory inventory, int start, int end, Set<Integer> locked, SortMode mode,
                                            InventorySorter.Region region, InventoryWizardConfig config) {
+        List<Integer> slots = new ArrayList<>();
         List<ItemStack> items = new ArrayList<>();
         for (int i = start; i < end; i++) {
-            items.add(inventory.getItem(i).copy());
+            if (!locked.contains(i)) {
+                slots.add(i);
+                items.add(inventory.getItem(i).copy());
+            }
         }
 
         List<ItemStack> sorted = InventorySorter.sort(items, mode, region, config);
-        if (sorted.size() > end - start) {
+        if (sorted.size() > slots.size()) {
             return;
         }
-        for (int i = start; i < end; i++) {
-            int sortedIndex = i - start;
-            inventory.setItem(i, sortedIndex < sorted.size() ? sorted.get(sortedIndex) : ItemStack.EMPTY);
+        for (int i = 0; i < slots.size(); i++) {
+            inventory.setItem(slots.get(i), i < sorted.size() ? sorted.get(i) : ItemStack.EMPTY);
         }
     }
 

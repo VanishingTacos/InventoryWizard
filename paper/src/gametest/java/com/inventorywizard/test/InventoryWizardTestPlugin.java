@@ -2,6 +2,7 @@ package com.inventorywizard.test;
 
 import com.inventorywizard.InventorySorter;
 import com.inventorywizard.InventoryWizardPlugin;
+import com.inventorywizard.PlayerDataManager;
 import com.inventorywizard.PlayerDataManager.SortMode;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
@@ -10,26 +11,33 @@ import org.bukkit.block.Block;
 import org.bukkit.block.Container;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.server.ServerLoadEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Proxy;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.Driver;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
+import java.util.UUID;
+import java.util.function.BiFunction;
 import java.util.function.Supplier;
 
 /**
@@ -217,6 +225,70 @@ public class InventoryWizardTestPlugin extends JavaPlugin implements Listener {
             Inventory reread = ((Container) world.getBlockAt(12, 100, 0).getState()).getInventory();
             return before.equals(count(reread)) && reread.getItem(0) != null;
         });
+
+        test("sorting leaves locked slots alone", () -> {
+            ItemStack[] slots = new ItemStack[36];
+            slots[0] = new ItemStack(Material.BREAD, 3);
+            slots[2] = new ItemStack(Material.COBBLESTONE, 10);
+            slots[5] = new ItemStack(Material.DIAMOND_PICKAXE);
+            slots[7] = new ItemStack(Material.IRON_SWORD);
+            slots[8] = new ItemStack(Material.TOTEM_OF_UNDYING);
+            slots[9] = new ItemStack(Material.DIAMOND_SWORD);
+            slots[15] = new ItemStack(Material.STONE, 10);
+            slots[20] = new ItemStack(Material.DIRT, 20);
+            slots[30] = new ItemStack(Material.DIRT, 30);
+            Player player = fakePlayer(UUID.randomUUID(), slots);
+            Set<Integer> locked = Set.of(5, 8, 9);
+
+            InventorySorter.sortPlayerInventory(player, SortMode.DEFAULT, true, locked);
+            InventorySorter.sortHotbar(player, SortMode.DEFAULT, InventorySorter.HotbarPriorities.DEFAULT, locked);
+
+            List<String> hotbar = new ArrayList<>();
+            for (int i = 0; i < 9; i++) {
+                hotbar.add(slots[i] == null ? "-" : slots[i].getType() + " x" + slots[i].getAmount());
+            }
+            boolean hotbarOk = hotbar.equals(List.of("IRON_SWORD x1", "BREAD x3", "COBBLESTONE x10", "-", "-",
+                    "DIAMOND_PICKAXE x1", "-", "-", "TOTEM_OF_UNDYING x1"));
+            boolean inventoryOk = slots[9].getType() == Material.DIAMOND_SWORD
+                    && slots[10].getType() == Material.STONE && slots[11].getType() == Material.DIRT && slots[11].getAmount() == 50
+                    && Arrays.stream(slots, 12, 36).allMatch(item -> item == null);
+            return hotbarOk && inventoryOk;
+        });
+
+        test("locked slots are saved in H2", () -> {
+            PlayerDataManager preferences = wizard.getPlayerDataManager();
+            Player player = fakePlayer(UUID.randomUUID(), new ItemStack[36]);
+            boolean locked = preferences.toggleLockedSlot(player, 8) && preferences.toggleLockedSlot(player, 35);
+            boolean unlocked = !preferences.toggleLockedSlot(player, 35);
+            // Dropping the cache makes the next read go to the database, behind the pending writes
+            preferences.forget(player);
+            return locked && unlocked && preferences.getLockedSlots(player).equals(Set.of(8));
+        });
+    }
+
+    /** Just enough of a Player for code that reads its id, name and inventory slots. */
+    private static Player fakePlayer(UUID id, ItemStack[] slots) {
+        PlayerInventory inventory = fake(PlayerInventory.class, (name, args) -> switch (name) {
+            case "getItem" -> slots[(int) args[0]];
+            case "setItem" -> {
+                slots[(int) args[0]] = (ItemStack) args[1];
+                yield null;
+            }
+            case "getSize" -> slots.length;
+            default -> throw new UnsupportedOperationException(name);
+        });
+        return fake(Player.class, (name, args) -> switch (name) {
+            case "getUniqueId" -> id;
+            case "getName", "toString" -> "iwiz-test-player";
+            case "getInventory" -> inventory;
+            case "updateInventory" -> null;
+            default -> throw new UnsupportedOperationException(name);
+        });
+    }
+
+    private static <T> T fake(Class<T> type, BiFunction<String, Object[], Object> methods) {
+        return type.cast(Proxy.newProxyInstance(type.getClassLoader(), new Class<?>[] {type},
+                (proxy, method, args) -> methods.apply(method.getName(), args)));
     }
 
     private void test(String name, Supplier<Boolean> body) {

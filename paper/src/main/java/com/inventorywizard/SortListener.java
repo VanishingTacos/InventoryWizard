@@ -16,6 +16,8 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 
+import java.util.Set;
+
 public class SortListener implements Listener {
 
     private final PlayerDataManager preferences;
@@ -60,7 +62,8 @@ public class SortListener implements Listener {
                     && player.hasPermission("inventorywizard.inventory") && plugin.isFeatureEnabled("inventory-sorting")) {
                 event.setCancelled(true);
                 PlayerDataManager.SortMode mode = preferences.getPlayerSortMode(player);
-                plugin.sortNextTick(player, () -> InventorySorter.sortPlayerInventory(player, mode, plugin.allowPartialStacksInInventory()),
+                plugin.sortNextTick(player, () -> InventorySorter.sortPlayerInventory(player, mode, plugin.allowPartialStacksInInventory(),
+                        preferences.getLockedSlots(player)),
                         0f, "§a✨ Inventory organized with wizard magic! (" + mode.getDisplayName() + ")");
             }
         }
@@ -71,7 +74,7 @@ public class SortListener implements Listener {
                 && player.hasPermission("inventorywizard.hotbar") && plugin.isFeatureEnabled("hotbar-sorting")) {
             event.setCancelled(true);
             PlayerDataManager.SortMode mode = preferences.getPlayerSortMode(player);
-            plugin.sortNextTick(player, () -> InventorySorter.sortHotbar(player, mode, plugin.getHotbarPriorities()),
+            plugin.sortNextTick(player, () -> InventorySorter.sortHotbar(player, mode, plugin.getHotbarPriorities(), preferences.getLockedSlots(player)),
                     0.2f, "§6✨ Hotbar arranged by wizardry! (" + mode.getDisplayName() + ")");
         }
     }
@@ -108,12 +111,13 @@ public class SortListener implements Listener {
             pitchOffset = 0f;
         }
 
+        Set<Integer> lockedSlots = preferences.getLockedSlots(player);
         plugin.sortNextTick(player, () -> {
             if (inventory) {
-                InventorySorter.sortPlayerInventory(player, mode, plugin.allowPartialStacksInInventory());
+                InventorySorter.sortPlayerInventory(player, mode, plugin.allowPartialStacksInInventory(), lockedSlots);
             }
             if (hotbar) {
-                InventorySorter.sortHotbar(player, mode, plugin.getHotbarPriorities());
+                InventorySorter.sortHotbar(player, mode, plugin.getHotbarPriorities(), lockedSlots);
             }
         }, pitchOffset, message);
     }
