@@ -27,12 +27,13 @@ Need help, found a bug or have an idea? Join the Discord!
 - **Survival-friendly hotbar** with weapons and tools first
 - **Stacks merged**, but enchanted or named items are never combined
 - **Three modes**: Default, Alphabetical and Stack-based
+- **Sort buttons** in the inventory, chest and shulker box screens, plus one to switch modes
 - **Works on** the inventory, hotbar, chests, barrels, shulker boxes and ender chests
 
 ## Quick Start
 1. Download the jar for your loader and Minecraft version (`InventoryWizard-<loader>-<version>+<minecraft>.jar`) from the [releases page](https://github.com/VanishingTacos/inventorywizard/releases) (Fabric/Quilt also needs [Fabric API](https://modrinth.com/mod/fabric-api))
 2. Drop it into `.minecraft/mods` (or `plugins` for Paper/Spigot)
-3. Press **`R`** or **Shift+Right Click** in any inventory to sort
+3. Press **`R`** or **Shift+Right Click** in any inventory to sort, or click the **sort button** next to the inventory or chest title
 
 Supports Minecraft 1.21 through 26.3 (Java 21+, or Java 25+ on 26.x). The client mod only sorts in singleplayer and LAN worlds you host; use the Paper plugin for servers.
 

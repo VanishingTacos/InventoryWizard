@@ -42,6 +42,9 @@ public class InventoryWizardForge {
         TickEvent.ClientTickEvent.Post.BUS.addListener(event -> InventoryWizard.onClientTick(Minecraft.getInstance()));
         //?}
 
+        //? if >=1.21.6
+        ScreenEvent.Init.Post.BUS.addListener(event -> InventoryWizard.onScreenInit(Minecraft.getInstance(), event.getScreen()));
+
         // Returning true cancels the event
         //? if >=1.21.9 {
         ScreenEvent.MouseButtonPressed.Pre.BUS.addListener(event -> InventoryWizard.handlesScreen(event.getScreen())
@@ -63,6 +66,7 @@ public class InventoryWizardForge {
         /*// Before Forge's EventBus 7 everything goes through the one game event bus and is cancelled by hand
         IEventBus bus = MinecraftForge.EVENT_BUS;
         bus.addListener((TickEvent.ClientTickEvent.Post event) -> InventoryWizard.onClientTick(Minecraft.getInstance()));
+        bus.addListener((ScreenEvent.Init.Post event) -> InventoryWizard.onScreenInit(Minecraft.getInstance(), event.getScreen()));
         bus.addListener((ScreenEvent.MouseButtonPressed.Pre event) -> {
             if (InventoryWizard.handlesScreen(event.getScreen())
                     && InventoryWizard.onMouseClick(Minecraft.getInstance(), (AbstractContainerScreen<?>) event.getScreen(), event.getButton())) {

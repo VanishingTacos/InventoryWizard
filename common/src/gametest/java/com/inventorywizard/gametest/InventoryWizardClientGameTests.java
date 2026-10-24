@@ -7,6 +7,7 @@ import com.inventorywizard.SortMode;
 import com.mojang.blaze3d.platform.InputConstants;
 //? if <1.21.9
 //import net.minecraft.client.KeyMapping;
+import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.gui.screens.inventory.ContainerScreen;
@@ -48,6 +49,9 @@ final class InventoryWizardClientGameTests {
     //? if <1.21.9
     //private static final int CYCLE_MODE_KEY = InputConstants.KEY_M;
     private static final int SORT_WAIT_TICKS = 5;
+    private static final String SORT_INVENTORY_BUTTON = "Sort inventory";
+    private static final String SORT_CONTAINER_BUTTON = "Sort container";
+    private static final String MODE_BUTTON = "Change sort mode";
 
     private InventoryWizardClientGameTests() {}
 
@@ -69,6 +73,9 @@ final class InventoryWizardClientGameTests {
         test("shulker box", () -> testBlockContainer(context, Blocks.SHULKER_BOX, new BlockPos(0, 0, -2), ShulkerBoxScreen.class, Input.SORT_KEY_HOVER, "shulker_box"));
         test("ender chest", () -> testEnderChest(context));
         test("disabled feature", () -> testDisabledFeature(context));
+        test("inventory sort button", () -> testInventoryButtons(context));
+        test("chest sort button", () -> testBlockContainer(context, Blocks.CHEST, new BlockPos(0, 0, 3), ContainerScreen.class, Input.SORT_BUTTON, "chest button"));
+        test("buttons turned off", () -> testButtonsOff(context));
         context.leaveWorld();
     }
 
@@ -210,7 +217,8 @@ final class InventoryWizardClientGameTests {
     private enum Input {
         SHIFT_RIGHT_CLICK,
         SORT_KEY_HOVER,
-        SORT_KEY_NO_HOVER
+        SORT_KEY_NO_HOVER,
+        SORT_BUTTON
     }
 
     private static void testBlockContainer(ClientTestContext context, Block block, BlockPos offset,
@@ -275,6 +283,52 @@ final class InventoryWizardClientGameTests {
         closeScreen(context);
     }
 
+    private static void testInventoryButtons(ClientTestContext context) {
+        context.runOnServer(s -> {
+            Inventory inv = player(s).getInventory();
+            inv.clearContent();
+            inv.setItem(9, new ItemStack(Items.DIRT, 20));
+            inv.setItem(15, new ItemStack(Items.STONE, 10));
+            inv.setItem(20, new ItemStack(Items.DIRT, 30));
+            inv.setItem(25, new ItemStack(Items.BREAD, 5));
+            inv.setItem(0, new ItemStack(Items.BREAD, 3));
+            inv.setItem(7, new ItemStack(Items.IRON_SWORD));
+        });
+        Map<String, Integer> before = totals(context);
+
+        openInventory(context);
+        context.clickWidget(SORT_INVENTORY_BUTTON);
+        context.waitTicks(SORT_WAIT_TICKS);
+
+        List<String> main = inventoryRange(context, 9, 36);
+        assertPrefix("inventory sort button", main, "stone x10", "dirt x50", "bread x5");
+        assertEmptyFrom("inventory sort button", main, 3);
+        assertEquals("hotbar untouched by the inventory sort button",
+                List.of("bread x3", "-", "-", "-", "-", "-", "-", "iron_sword x1", "-"),
+                inventoryRange(context, 0, 9));
+        assertEquals("item totals after the inventory sort button", before, totals(context));
+        boolean focused = context.computeOnClient(client -> ClientTestContext.screen(client).getFocused() instanceof AbstractWidget w
+                && w.getMessage().getString().startsWith(SORT_INVENTORY_BUTTON));
+        assertEquals("sort button not left highlighted after a click", false, focused);
+
+        context.clickWidget(MODE_BUTTON);
+        SortMode mode = context.computeOnClient(client -> InventoryWizard.config().sortMode);
+        assertEquals("mode after clicking the mode button", SortMode.ALPHABETICAL, mode);
+        assertEquals("the mode button must not move items", main, inventoryRange(context, 9, 36));
+
+        context.runOnClient(client -> InventoryWizard.config().sortMode = SortMode.DEFAULT);
+        closeScreen(context);
+    }
+
+    private static void testButtonsOff(ClientTestContext context) {
+        context.runOnClient(client -> InventoryWizard.config().showButtons = false);
+        openInventory(context);
+        assertEquals("sort button hidden when turned off", false, context.hasWidget(SORT_INVENTORY_BUTTON));
+        assertEquals("mode button hidden when turned off", false, context.hasWidget(MODE_BUTTON));
+        context.runOnClient(client -> InventoryWizard.config().showButtons = true);
+        closeScreen(context);
+    }
+
     // ---- input helpers -------------------------------------------------------
 
     private static void openInventory(ClientTestContext context) {
@@ -315,6 +369,10 @@ final class InventoryWizardClientGameTests {
                 context.setCursorGui(1, 1);
                 context.waitTicks(2);
                 context.pressKey(SORT_KEY);
+                context.waitTicks(SORT_WAIT_TICKS);
+            }
+            case SORT_BUTTON -> {
+                context.clickWidget(SORT_CONTAINER_BUTTON);
                 context.waitTicks(SORT_WAIT_TICKS);
             }
         }

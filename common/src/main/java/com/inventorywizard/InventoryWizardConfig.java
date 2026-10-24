@@ -26,6 +26,8 @@ public class InventoryWizardConfig {
     public Sound sound = new Sound();
 
     public boolean showMessages = true;
+    /** Sort and mode buttons in the inventory, chest and shulker box screens. */
+    public boolean showButtons = true;
     public Features features = new Features();
 
     /** When false, leftover partial stacks are placed after all full stacks instead of being sorted in. */

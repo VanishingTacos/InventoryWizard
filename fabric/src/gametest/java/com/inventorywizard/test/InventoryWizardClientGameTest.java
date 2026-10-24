@@ -61,6 +61,9 @@ public class InventoryWizardClientGameTest implements FabricClientGameTest {
 
     private static final int SORT_KEY = InputConstants.KEY_R;
     private static final int SORT_WAIT_TICKS = 5;
+    private static final String SORT_INVENTORY_BUTTON = "Sort inventory";
+    private static final String SORT_CONTAINER_BUTTON = "Sort container";
+    private static final String MODE_BUTTON = "Change sort mode";
     /** Extra ticks to linger after each step so a person can follow along: ./gradlew runClientGameTest -PtestPace=20 */
     private static final int PACE_TICKS = Integer.getInteger("inventorywizard.test.pace", 0);
 
@@ -95,6 +98,9 @@ public class InventoryWizardClientGameTest implements FabricClientGameTest {
             testBlockContainer(context, server, Blocks.SHULKER_BOX, new BlockPos(0, 0, -2), ShulkerBoxScreen.class, Input.SORT_KEY_HOVER, "shulker_box");
             testEnderChest(context, server);
             testDisabledFeature(context, server);
+            testInventoryButtons(context, server);
+            testBlockContainer(context, server, Blocks.CHEST, new BlockPos(0, 0, 3), ContainerScreen.class, Input.SORT_BUTTON, "chest-button");
+            testButtonsOff(context);
         }
 
         testDedicatedServerDoesNothing(context);
@@ -226,7 +232,8 @@ public class InventoryWizardClientGameTest implements FabricClientGameTest {
     private enum Input {
         SHIFT_RIGHT_CLICK,
         SORT_KEY_HOVER,
-        SORT_KEY_NO_HOVER
+        SORT_KEY_NO_HOVER,
+        SORT_BUTTON
     }
 
     private static void testBlockContainer(ClientGameTestContext context, TestServerContext server, Block block, BlockPos offset,
@@ -297,6 +304,54 @@ public class InventoryWizardClientGameTest implements FabricClientGameTest {
         closeScreen(context);
     }
 
+    private static void testInventoryButtons(ClientGameTestContext context, TestServerContext server) {
+        server.runOnServer(s -> {
+            Inventory inv = player(s).getInventory();
+            inv.clearContent();
+            inv.setItem(9, new ItemStack(Items.DIRT, 20));
+            inv.setItem(15, new ItemStack(Items.STONE, 10));
+            inv.setItem(20, new ItemStack(Items.DIRT, 30));
+            inv.setItem(25, new ItemStack(Items.BREAD, 5));
+            inv.setItem(0, new ItemStack(Items.BREAD, 3));
+            inv.setItem(7, new ItemStack(Items.IRON_SWORD));
+        });
+        Map<String, Integer> before = totals(server);
+
+        openInventory(context);
+        context.takeScreenshot("inventorywizard-inventory-buttons");
+        clickWidget(context, SORT_INVENTORY_BUTTON);
+        context.waitTicks(SORT_WAIT_TICKS);
+        pace(context);
+
+        List<String> main = inventoryRange(server, 9, 36);
+        assertPrefix("inventory sort button", main, "stone x10", "dirt x50", "bread x5");
+        assertEmptyFrom("inventory sort button", main, 3);
+        assertEquals("hotbar untouched by the inventory sort button",
+                List.of("bread x3", "-", "-", "-", "-", "-", "-", "iron_sword x1", "-"),
+                inventoryRange(server, 0, 9));
+        assertEquals("item totals after the inventory sort button", before, totals(server));
+        boolean focused = context.computeOnClient(client -> screen(client).getFocused() instanceof AbstractWidget w
+                && w.getMessage().getString().startsWith(SORT_INVENTORY_BUTTON));
+        assertEquals("sort button not left highlighted after a click", false, focused);
+
+        clickWidget(context, MODE_BUTTON);
+        SortMode mode = context.computeOnClient(client -> InventoryWizard.config().sortMode);
+        assertEquals("mode after clicking the mode button", SortMode.ALPHABETICAL, mode);
+        assertEquals("the mode button must not move items", main, inventoryRange(server, 9, 36));
+
+        context.runOnClient(client -> InventoryWizard.config().sortMode = SortMode.DEFAULT);
+        closeScreen(context);
+    }
+
+    private static void testButtonsOff(ClientGameTestContext context) {
+        context.runOnClient(client -> InventoryWizard.config().showButtons = false);
+        openInventory(context);
+        assertEquals("sort button hidden when turned off", false, hasWidget(context, SORT_INVENTORY_BUTTON));
+        assertEquals("mode button hidden when turned off", false, hasWidget(context, MODE_BUTTON));
+        context.runOnClient(client -> InventoryWizard.config().showButtons = true);
+        closeScreen(context);
+    }
+
     // ---- multiplayer ---------------------------------------------------------
 
     private static void testDedicatedServerDoesNothing(ClientGameTestContext context) {
@@ -321,6 +376,7 @@ public class InventoryWizardClientGameTest implements FabricClientGameTest {
                 List<String> before = inventoryRange(server, 9, 36);
 
                 openInventory(context);
+                assertEquals("no sort button on a multiplayer server", false, hasWidget(context, SORT_INVENTORY_BUTTON));
                 hoverSlot(context, inventorySlot(20));
                 context.getInput().pressKey(SORT_KEY);
                 context.waitTicks(SORT_WAIT_TICKS);
@@ -412,6 +468,10 @@ public class InventoryWizardClientGameTest implements FabricClientGameTest {
                 context.getInput().pressKey(SORT_KEY);
                 context.waitTicks(SORT_WAIT_TICKS);
             }
+            case SORT_BUTTON -> {
+                clickWidget(context, SORT_CONTAINER_BUTTON);
+                context.waitTicks(SORT_WAIT_TICKS);
+            }
         }
     }
 
@@ -440,6 +500,10 @@ public class InventoryWizardClientGameTest implements FabricClientGameTest {
         context.getInput().setCursorPos(position[0], position[1]);
         context.getInput().pressMouse(InputConstants.MOUSE_BUTTON_LEFT);
         context.waitTicks(2);
+    }
+
+    private static boolean hasWidget(ClientGameTestContext context, String labelPrefix) {
+        return context.computeOnClient(client -> findWidget(screen(client), labelPrefix) != null);
     }
 
     private static AbstractWidget findWidget(ContainerEventHandler parent, String labelPrefix) {

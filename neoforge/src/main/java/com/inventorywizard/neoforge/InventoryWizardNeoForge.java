@@ -35,6 +35,7 @@ public class InventoryWizardNeoForge {
         IEventBus bus = NeoForge.EVENT_BUS;
         bus.addListener(ClientTickEvent.Post.class, event -> InventoryWizard.onClientTick(Minecraft.getInstance()));
 
+        bus.addListener(ScreenEvent.Init.Post.class, event -> InventoryWizard.onScreenInit(Minecraft.getInstance(), event.getScreen()));
         bus.addListener(ScreenEvent.MouseButtonPressed.Pre.class, event -> {
             if (InventoryWizard.handlesScreen(event.getScreen())
                     && InventoryWizard.onMouseClick(Minecraft.getInstance(), (AbstractContainerScreen<?>) event.getScreen(),

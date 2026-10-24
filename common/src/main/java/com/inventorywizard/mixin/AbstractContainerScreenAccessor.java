@@ -14,4 +14,19 @@ public interface AbstractContainerScreenAccessor {
 
     @Accessor("hoveredSlot")
     @Nullable Slot inventorywizard$getHoveredSlot();
+
+    @Accessor("leftPos")
+    int inventorywizard$getLeftPos();
+
+    @Accessor("topPos")
+    int inventorywizard$getTopPos();
+
+    @Accessor("imageWidth")
+    int inventorywizard$getImageWidth();
+
+    @Accessor("titleLabelY")
+    int inventorywizard$getTitleLabelY();
+
+    @Accessor("inventoryLabelY")
+    int inventorywizard$getInventoryLabelY();
 }

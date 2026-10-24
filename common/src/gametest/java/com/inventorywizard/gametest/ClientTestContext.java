@@ -270,6 +270,10 @@ public final class ClientTestContext {
         waitTicks(2);
     }
 
+    public boolean hasWidget(String labelPrefix) {
+        return computeOnClient(client -> findWidget(screen(client), labelPrefix) != null);
+    }
+
     private static AbstractWidget findWidget(ContainerEventHandler parent, String labelPrefix) {
         for (GuiEventListener child : parent.children()) {
             if (child instanceof AbstractWidget widget && widget.getMessage().getString().startsWith(labelPrefix)) {

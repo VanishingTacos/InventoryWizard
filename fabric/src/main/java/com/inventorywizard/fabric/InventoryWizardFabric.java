@@ -31,6 +31,7 @@ public class InventoryWizardFabric implements ClientModInitializer {
         ClientTickEvents.END_CLIENT_TICK.register(InventoryWizard::onClientTick);
 
         ScreenEvents.AFTER_INIT.register((client, screen, scaledWidth, scaledHeight) -> {
+            InventoryWizard.onScreenInit(client, screen);
             if (!InventoryWizard.handlesScreen(screen)) {
                 return;
             }

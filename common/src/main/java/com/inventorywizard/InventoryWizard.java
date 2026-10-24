@@ -18,7 +18,6 @@ import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.resources.Identifier;
 //?}
-import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.ChestMenu;
 import net.minecraft.world.inventory.ShulkerBoxMenu;
@@ -77,6 +76,13 @@ public final class InventoryWizard {
         while (CYCLE_MODE_KEY.consumeClick()) {
             SortActions.cycleSortMode(client);
         }
+        //? if >=26.2 {
+        Screen screen = client.gui.screen();
+        //?} else
+        //Screen screen = client.screen;
+        if (screen != null) {
+            SortButtons.tick(client, screen);
+        }
     }
 
     /**
@@ -103,6 +109,13 @@ public final class InventoryWizard {
     public static boolean handlesScreen(Screen screen) {
         // The creative inventory has its own item picker and search box; leave it alone
         return screen instanceof AbstractContainerScreen<?> && !(screen instanceof CreativeModeInventoryScreen);
+    }
+
+    /** Called by each loader after a screen's init, once vanilla has added its own widgets. */
+    public static void onScreenInit(Minecraft client, Screen screen) {
+        if (handlesScreen(screen)) {
+            SortButtons.add(client, (AbstractContainerScreen<?>) screen);
+        }
     }
 
     /** Returns true when the click was used for sorting and vanilla handling should be cancelled. */
@@ -155,10 +168,7 @@ public final class InventoryWizard {
                 SortActions.sortSlot(client, menu, slot);
             } else if (menu instanceof ChestMenu || menu instanceof ShulkerBoxMenu) {
                 // Not hovering anything: sort the open container
-                menu.slots.stream()
-                        .filter(s -> !(s.container instanceof Inventory))
-                        .findFirst()
-                        .ifPresent(s -> SortActions.sortSlot(client, menu, s));
+                SortActions.sortOpenContainer(client, menu);
             } else {
                 SortActions.sortPlayer(client, SortActions.PlayerTarget.ALL);
             }

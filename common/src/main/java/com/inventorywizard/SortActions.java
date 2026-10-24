@@ -108,6 +108,14 @@ public final class SortActions {
         }
     }
 
+    /** Sorts the container part of the open menu, without needing a hovered slot. */
+    public static void sortOpenContainer(Minecraft client, AbstractContainerMenu menu) {
+        menu.slots.stream()
+                .filter(s -> !(s.container instanceof Inventory))
+                .findFirst()
+                .ifPresent(s -> sortSlot(client, menu, s));
+    }
+
     public static void sortPlayer(Minecraft client, PlayerTarget target) {
         InventoryWizardConfig config = InventoryWizard.config();
         SortMode mode = config.sortMode;
