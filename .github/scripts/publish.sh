@@ -7,7 +7,9 @@
 # come from publish_game_versions in props/<mc>.properties. The Paper jar supports all of them.
 #
 # Env: VERSION, CHANGELOG_FILE, DIST (default dist), DRY_RUN=1 to print the uploads without sending them,
+# LOADERS to upload only some jars (e.g. "neoforge forge paper"; default all),
 # and CURSEFORGE_TOKEN / MODRINTH_TOKEN / HANGAR_API_KEY for the platforms being uploaded to.
+# A platform that fails doesn't stop the others; the script exits non-zero at the end.
 set -euo pipefail
 
 CURSEFORGE_PROJECT=1752626
@@ -32,11 +34,30 @@ for platform in "$@"; do
 	esac
 done
 
+# One process per platform, so set -e still stops a platform at its first failed upload
+if [ $# -gt 1 ]; then
+	failed=()
+	for platform in "$@"; do
+		bash "$0" "$platform" || failed+=("$platform")
+	done
+	if [ ${#failed[@]} -gt 0 ]; then
+		echo "::error::Upload failed for: ${failed[*]}"
+		exit 1
+	fi
+	exit 0
+fi
+
 work=$(mktemp -d)
 trap 'rm -rf "$work"' EXIT
 
+# Prints the response, or on an HTTP error shows the API's message and fails
 curl_api() {
-	curl -sS --fail-with-body -A "$USER_AGENT" "$@"
+	local out=$work/response
+	if ! curl -sS --fail-with-body -A "$USER_AGENT" -o "$out" "$@"; then
+		echo "::error::$(cat "$out" 2>/dev/null)" >&2
+		return 1
+	fi
+	cat "$out"
 }
 
 # props/<mc>.properties publish_game_versions as a JSON array
@@ -76,8 +97,18 @@ read_jar() {
 }
 
 mapfile -t jars < <(ls "$DIST"/InventoryWizard-*.jar | sort -V)
+if [ -n "${LOADERS:-}" ]; then
+	selected=()
+	for jar in "${jars[@]}"; do
+		read_jar "$jar"
+		if [[ " $LOADERS " == *" $loader "* ]]; then
+			selected+=("$jar")
+		fi
+	done
+	jars=("${selected[@]}")
+fi
 if [ ${#jars[@]} -eq 0 ]; then
-	echo "no jars in $DIST" >&2
+	echo "no jars in $DIST for loaders: ${LOADERS:-all}" >&2
 	exit 1
 fi
 
@@ -182,7 +213,8 @@ publish_curseforge() {
 		if [ "$loader" = fabric ]; then
 			relations='{"projects":[{"slug":"fabric-api","type":"requiredDependency"}]}'
 		else
-			relations='{"projects":[]}'
+			# CurseForge rejects an empty projects list, so leave relations out
+			relations=null
 		fi
 
 		echo "CurseForge: $title -> $(jq -c -n --argjson a "$game_versions" --argjson b "$other" '$a + $b')"
@@ -197,7 +229,8 @@ publish_curseforge() {
 			--argjson ids "$ids" \
 			--argjson relations "$relations" \
 			'{changelog: $changelog, changelogType: "markdown", displayName: $name,
-			  gameVersions: $ids, releaseType: "release", relations: $relations}' >"$work/curseforge.json"
+			  gameVersions: $ids, releaseType: "release"}
+			 + if $relations then {relations: $relations} else {} end' >"$work/curseforge.json"
 
 		curl_api -X POST "$api/projects/$CURSEFORGE_PROJECT/upload-file" \
 			-H "X-Api-Token: $CURSEFORGE_TOKEN" \
