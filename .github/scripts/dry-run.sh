@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
-# Prints what a release would upload to Modrinth and CurseForge, without uploading anything.
+# Prints what a release would upload to Modrinth, without uploading anything.
 # Collects the jars for the version in gradle.properties the way the release workflow does
 # (.github/scripts/collect-jars.sh), then runs .github/scripts/publish.sh with DRY_RUN=1.
 #
-#   .github/scripts/dry-run.sh [--build] [modrinth] [curseforge] [hangar]
+#   .github/scripts/dry-run.sh [--build] [modrinth] [hangar]
 #
-# Platforms default to modrinth and curseforge. --build runs ./gradlew build first.
+# Platforms default to modrinth. --build runs ./gradlew build first.
 # LOADERS limits the uploads as in publish.sh, e.g. LOADERS="fabric" .github/scripts/dry-run.sh modrinth
-# The Modrinth and CurseForge dry runs still read which files the projects already have (from Modrinth's
-# public API and CFWidget), to show which uploads they would skip; Hangar's sends no requests. Needs jq.
+# Modrinth's dry run still reads the project's existing versions from its public API, to show which
+# uploads it would skip; Hangar's sends no requests. Needs jq.
 set -euo pipefail
 
 cd "$(dirname "$0")/../.."
@@ -22,7 +22,7 @@ for arg in "$@"; do
 	esac
 done
 if [ ${#platforms[@]} -eq 0 ]; then
-	platforms=(modrinth curseforge)
+	platforms=(modrinth)
 fi
 
 if ! command -v jq >/dev/null; then
