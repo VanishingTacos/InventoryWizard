@@ -113,6 +113,7 @@ public final class InventoryWizard {
 
     /** Called by each loader after a screen's init, once vanilla has added its own widgets. */
     public static void onScreenInit(Minecraft client, Screen screen) {
+        CursorScroll.reset();
         if (handlesScreen(screen)) {
             SortButtons.add(client, (AbstractContainerScreen<?>) screen);
         }
@@ -126,10 +127,12 @@ public final class InventoryWizard {
     public static boolean onMouseClick(Minecraft client, AbstractContainerScreen<?> screen, MouseButtonEvent event) {
         boolean sortClick = event.button() == InputConstants.MOUSE_BUTTON_RIGHT && event.hasShiftDown();
         boolean lockClick = event.button() == InputConstants.MOUSE_BUTTON_LEFT && event.hasAltDown();
+        CursorScroll.onMouseClick(screen, hoveredSlot(screen), event.button(), event.hasShiftDown());
     //?} else {
     /*public static boolean onMouseClick(Minecraft client, AbstractContainerScreen<?> screen, int button) {
         boolean sortClick = button == InputConstants.MOUSE_BUTTON_RIGHT && Screen.hasShiftDown();
         boolean lockClick = button == InputConstants.MOUSE_BUTTON_LEFT && Screen.hasAltDown();
+        CursorScroll.onMouseClick(screen, hoveredSlot(screen), button, Screen.hasShiftDown());
     *///?}
         if (!sortClick && !lockClick) {
             return false;
@@ -159,6 +162,11 @@ public final class InventoryWizard {
             SortActions.sortSlot(client, menu, slot);
         }
         return true;
+    }
+
+    /** Returns true when the scroll adjusted the carried stack and vanilla handling should be cancelled. */
+    public static boolean onMouseScroll(Minecraft client, AbstractContainerScreen<?> screen, double verticalAmount) {
+        return config.scrollAdjustsStack && CursorScroll.onMouseScroll(client, screen, verticalAmount);
     }
 
     /** Returns true when the key press was used and vanilla handling should be cancelled. */

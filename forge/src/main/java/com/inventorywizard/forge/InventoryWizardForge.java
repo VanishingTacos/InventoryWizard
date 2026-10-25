@@ -57,6 +57,10 @@ public class InventoryWizardForge {
         ScreenEvent.KeyPressed.Pre.BUS.addListener(event -> InventoryWizard.handlesScreen(event.getScreen())
                 && InventoryWizard.onKeyPress(Minecraft.getInstance(), (AbstractContainerScreen<?>) event.getScreen(), event.getKeyCode(), event.getScanCode()));
         *///?}
+        //? if >=1.21.6 {
+        ScreenEvent.MouseScrolled.Pre.BUS.addListener(event -> InventoryWizard.handlesScreen(event.getScreen())
+                && InventoryWizard.onMouseScroll(Minecraft.getInstance(), (AbstractContainerScreen<?>) event.getScreen(), event.getDeltaY()));
+        //?}
 
         //? if >=1.21.6 {
         RegisterClientCommandsEvent.BUS.addListener(event -> InventoryWizard.registerCommands(event.getDispatcher()));
@@ -76,6 +80,12 @@ public class InventoryWizardForge {
         bus.addListener((ScreenEvent.KeyPressed.Pre event) -> {
             if (InventoryWizard.handlesScreen(event.getScreen())
                     && InventoryWizard.onKeyPress(Minecraft.getInstance(), (AbstractContainerScreen<?>) event.getScreen(), event.getKeyCode(), event.getScanCode())) {
+                event.setCanceled(true);
+            }
+        });
+        bus.addListener((ScreenEvent.MouseScrolled.Pre event) -> {
+            if (InventoryWizard.handlesScreen(event.getScreen())
+                    && InventoryWizard.onMouseScroll(Minecraft.getInstance(), (AbstractContainerScreen<?>) event.getScreen(), event.getDeltaY())) {
                 event.setCanceled(true);
             }
         });

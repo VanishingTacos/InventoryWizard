@@ -29,6 +29,7 @@ Need help, found a bug or have an idea? Join the Discord!
 - **Three modes**: Default, Alphabetical and Stack-based
 - **Sort buttons** in the inventory, chest and shulker box screens, plus one to switch modes
 - **Locked slots** that sorting never moves: **Alt+Click** a hotbar or inventory slot to lock it (`/iwiz lock [slot]` on Paper)
+- **Scroll to adjust a held stack**: after picking up a stack, scroll up to take one more item from its slot or down to put one back (mod only, works on any server)
 - **Works on** the inventory, hotbar, chests, barrels, shulker boxes and ender chests
 
 ## Quick Start
