@@ -3,11 +3,13 @@
 #   CurseForge: the Fabric, NeoForge and Forge jars
 #   Modrinth:   every jar, Paper included
 #   Hangar:     the Paper jar
-# Mod jars are InventoryWizard-<loader>-<version>+<mc>.jar; the Minecraft versions each one supports
-# come from publish_game_versions in props/<mc>.properties. The Paper jar supports all of them.
+# Mod jars are InventoryWizard-<loaders>-<version>+<mc>.jar, <loaders> being the loaders the jar runs on
+# joined by _ (e.g. neoforge_forge_fabric). A jar is uploaded once per loader, so each upload keeps its own
+# loader tags and dependencies. The Minecraft versions each jar supports come from publish_game_versions
+# in props/<mc>.properties. The Paper jar supports all of them.
 #
 # Env: VERSION, CHANGELOG_FILE, DIST (default dist), DRY_RUN=1 to print the uploads without sending them,
-# LOADERS to upload only some jars (e.g. "neoforge forge paper"; default all),
+# LOADERS to upload only some loaders (e.g. "neoforge forge paper"; default all),
 # and CURSEFORGE_TOKEN / MODRINTH_TOKEN / HANGAR_API_KEY for the platforms being uploaded to.
 # A platform that fails doesn't stop the others; the script exits non-zero at the end.
 set -euo pipefail
@@ -81,13 +83,14 @@ display_loader() {
 	esac
 }
 
-# Sets loader, mc and game_versions (JSON) for a jar
+# Sets jar_loaders (the loaders it runs on, space-separated), mc and game_versions (JSON) for a jar
 read_jar() {
 	local name
 	name=$(basename "$1" .jar)
 	name=${name#InventoryWizard-}
-	loader=${name%%-*}
-	if [ "$loader" = paper ]; then
+	jar_loaders=${name%%-*}
+	jar_loaders=${jar_loaders//_/ }
+	if [ "$jar_loaders" = paper ]; then
 		mc=
 		game_versions=$(all_game_versions)
 	else
@@ -96,21 +99,27 @@ read_jar() {
 	fi
 }
 
-mapfile -t jars < <(ls "$DIST"/InventoryWizard-*.jar | sort -V)
-if [ -n "${LOADERS:-}" ]; then
-	selected=()
-	for jar in "${jars[@]}"; do
-		read_jar "$jar"
-		if [[ " $LOADERS " == *" $loader "* ]]; then
-			selected+=("$jar")
+# One "<jar> <loader>" line per upload
+uploads=()
+for jar in $(ls "$DIST"/InventoryWizard-*.jar | sort -V); do
+	read_jar "$jar"
+	for loader in $jar_loaders; do
+		if [ -z "${LOADERS:-}" ] || [[ " $LOADERS " == *" $loader "* ]]; then
+			uploads+=("$jar $loader")
 		fi
 	done
-	jars=("${selected[@]}")
-fi
-if [ ${#jars[@]} -eq 0 ]; then
+done
+if [ ${#uploads[@]} -eq 0 ]; then
 	echo "no jars in $DIST for loaders: ${LOADERS:-all}" >&2
 	exit 1
 fi
+
+# Sets jar, loader, mc and game_versions for one of the uploads
+read_upload() {
+	jar=${1% *}
+	read_jar "$jar"
+	loader=${1##* }
+}
 
 # --- Modrinth ---------------------------------------------------------------------------------------
 
@@ -118,9 +127,9 @@ publish_modrinth() {
 	local existing
 	existing=$(curl_api "https://api.modrinth.com/v2/project/$MODRINTH_PROJECT/version")
 
-	local jar
-	for jar in "${jars[@]}"; do
-		read_jar "$jar"
+	local upload
+	for upload in "${uploads[@]}"; do
+		read_upload "$upload"
 		local number loaders deps title
 		if [ "$loader" = paper ]; then
 			number=$VERSION
@@ -198,9 +207,9 @@ publish_curseforge() {
 			| [($mc[] | find(.; $mct)), ($other[] | find(.; $ot))]'
 	}
 
-	local jar
-	for jar in "${jars[@]}"; do
-		read_jar "$jar"
+	local upload
+	for upload in "${uploads[@]}"; do
+		read_upload "$upload"
 		[ "$loader" = paper ] && continue
 
 		local title other relations ids
@@ -243,13 +252,13 @@ publish_curseforge() {
 
 publish_hangar() {
 	local api=https://hangar.papermc.io/api/v1
-	local jar=
-	for candidate in "${jars[@]}"; do
-		read_jar "$candidate"
+	local jar= upload
+	for upload in "${uploads[@]}"; do
+		read_upload "$upload"
 		if [ "$loader" = paper ]; then
-			jar=$candidate
 			break
 		fi
+		jar=
 	done
 	if [ -z "$jar" ]; then
 		echo "Hangar: no Paper jar in $DIST" >&2

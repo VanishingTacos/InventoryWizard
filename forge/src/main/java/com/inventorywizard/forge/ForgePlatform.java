@@ -15,6 +15,11 @@ import java.util.List;
 public class ForgePlatform implements Platform {
 
     @Override
+    public boolean isActive() {
+        return Platform.classExists("net.minecraftforge.fml.loading.FMLLoader");
+    }
+
+    @Override
     public Path configDir() {
         return FMLPaths.CONFIGDIR.get();
     }

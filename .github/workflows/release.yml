@@ -1,4 +1,5 @@
-# Builds the Fabric, NeoForge and Forge jars for every Minecraft version, plus the Paper jar, on every push and PR.
+# Builds the mod jars for every Minecraft version (one multi-loader jar each, plus a Fabric jar before 26.1),
+# plus the Paper jar, on every push and PR.
 # Pushes to main also (re)create a draft release named after `version` in gradle.properties,
 # with release notes made from the conventional commits since the previous release tag.
 # Running it by hand on main with any of the curseforge/modrinth/hangar boxes ticked also uploads the jars there
@@ -62,19 +63,11 @@ jobs:
           chmod +x gradlew
           ./gradlew build --stacktrace
 
-      # Only the jars players install: no -sources jars, and not Paper's unshaded -plain jar.
-      # Mod jars are versions/<mc>-<loader>/InventoryWizard-<loader>-<version>+<mc>.jar
+      # Only the jars players install; see .github/scripts/collect-jars.sh
       - name: Collect jars
         env:
           VERSION: ${{ steps.version.outputs.version }}
-        run: |
-          mkdir -p dist
-          for loader in fabric neoforge forge; do
-            cp versions/*-$loader/InventoryWizard-$loader-$VERSION+*.jar dist/
-          done
-          rm -f dist/*-sources.jar
-          cp versions/*-paper/InventoryWizard-paper-$VERSION.jar dist/
-          ls -l dist
+        run: bash .github/scripts/collect-jars.sh
 
       - uses: actions/upload-artifact@v4
         with:
