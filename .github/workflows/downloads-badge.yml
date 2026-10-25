@@ -1,4 +1,4 @@
-# Sums the download counts from Modrinth, CurseForge, Hangar and GitHub Releases and publishes
+# Sums the download counts from Modrinth, Hangar and GitHub Releases and publishes
 # them as a shields.io endpoint JSON on the `badges` branch, so the README badge shows the combined total.
 name: Update Downloads Badge
 
@@ -25,14 +25,12 @@ jobs:
         run: |
           set -euo pipefail
           modrinth=$(curl -fsS https://api.modrinth.com/v2/project/inventorywizard | jq '.downloads')
-          # The official CurseForge API needs a key; cfwidget proxies the public numbers
-          curseforge=$(curl -fsS https://api.cfwidget.com/1752626 | jq '.downloads.total')
           hangar=$(curl -fsS https://hangar.papermc.io/api/v1/projects/InventoryWizard | jq '.stats.downloads')
           # Sum asset downloads across every release (all pages)
           github=$(gh api --paginate "repos/${{ github.repository }}/releases" \
             --jq '.[].assets[].download_count' | jq -s 'add // 0')
-          total=$((modrinth + curseforge + hangar + github))
-          echo "Modrinth=$modrinth CurseForge=$curseforge Hangar=$hangar GitHub=$github Total=$total"
+          total=$((modrinth + hangar + github))
+          echo "Modrinth=$modrinth Hangar=$hangar GitHub=$github Total=$total"
           echo "total=$total" >> "$GITHUB_OUTPUT"
 
       - name: Write badge JSON
