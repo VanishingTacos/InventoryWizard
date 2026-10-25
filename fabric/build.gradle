@@ -58,7 +58,9 @@ dependencies {
 
 	// Settings screen is exposed through the Mod Menu API, which Mod Settings reads
 	add(modConfiguration('compileOnly'), "com.terraformersmc:modmenu:${project.modmenu_version}")
-	add(modConfiguration('localRuntime'), "maven.modrinth:mod-settings:${project.mod_settings_version}")
+	if (project.findProperty('mod_settings_version')) {
+		add(modConfiguration('localRuntime'), "maven.modrinth:mod-settings:${project.mod_settings_version}")
+	}
 }
 
 // Keep using the existing run/ folder at the repo root

@@ -9,7 +9,9 @@ import net.minecraft.client.gui.GuiGraphicsExtractor;
 //import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
-//? if >=1.21.6 {
+//? if >=26.4 {
+/*import net.minecraft.client.renderer.pipeline.RenderPipelines;
+*///?} else if >=1.21.6 {
 import net.minecraft.client.renderer.RenderPipelines;
 //?} else if >=1.21.2 {
 /*import net.minecraft.client.renderer.RenderType;
@@ -31,7 +33,10 @@ public abstract class AbstractContainerScreenMixin {
     @Unique
     private static final int inventorywizard$LOCK_SIZE = 8;
 
-    //? if >=26.1 {
+    //? if >=26.4 {
+    /*@Inject(method = "extractSlot", at = @At("RETURN"))
+    private void inventorywizard$drawLock(GuiGraphicsExtractor graphics, Slot slot, CallbackInfo ci) {
+    *///?} else if >=26.1 {
     @Inject(method = "extractSlot", at = @At("RETURN"))
     private void inventorywizard$drawLock(GuiGraphicsExtractor graphics, Slot slot, int mouseX, int mouseY, CallbackInfo ci) {
     //?} else if >=1.21.11 {

@@ -38,7 +38,7 @@ stonecutter {
 	create(rootProject) {
 		vcsVersion = '26.3'
 		['common', 'fabric', 'neoforge', 'forge'].each { loader ->
-			branch(loader) { versions(*minecraftVersions) }
+			branch(loader) { versions(*(loader in ['common', 'fabric'] ? minecraftVersions + '26.4' : minecraftVersions)) }
 		}
 	}
 }
