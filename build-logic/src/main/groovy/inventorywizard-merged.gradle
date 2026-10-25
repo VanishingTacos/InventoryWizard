@@ -4,9 +4,9 @@
 // Before 26.1 Fabric's classes are remapped to intermediary, so Fabric keeps its own jar there.
 import java.util.jar.JarFile
 
-def mergeFabric = stonecutter.eval(stonecutter.current.version, '>=26.1')
-// In the order the loaders are named in the jar
-def loaders = ['neoforge', 'forge'] + (mergeFabric ? ['fabric'] : [])
+// In the order the loaders are named in the jar; set in inventorywizard-common
+def loaders = mergedLoaders
+def mergeFabric = 'fabric' in loaders
 // The common classes come from this loader's jar. Fabric's is compiled against plain vanilla, so it
 // only uses what every loader has; NeoForge and Forge widen access with access transformers, which
 // can leave traces in their class files (e.g. an inner class marked public).

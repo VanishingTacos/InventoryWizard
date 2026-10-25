@@ -4,13 +4,16 @@
 #   Modrinth:   every jar, Paper included
 #   Hangar:     the Paper jar
 # Mod jars are InventoryWizard-<loaders>-<version>+<mc>.jar, <loaders> being the loaders the jar runs on
-# joined by _ (e.g. neoforge_forge_fabric). A jar is uploaded once per loader, so each upload keeps its own
-# loader tags and dependencies. The Minecraft versions each jar supports come from publish_game_versions
-# in props/<mc>.properties. The Paper jar supports all of them.
+# joined by _ (e.g. neoforge_forge_fabric). The platforms attach dependencies to a whole upload, so a jar is
+# uploaded once per group of loaders that share them: NeoForge and Forge together (no dependencies), and
+# Fabric (also tagged Quilt) on its own, as it needs Fabric API. The Minecraft versions each jar supports
+# come from publish_game_versions in props/<mc>.properties. The Paper jar supports all of them.
 #
 # Env: VERSION, CHANGELOG_FILE, DIST (default dist), DRY_RUN=1 to print the uploads without sending them,
-# LOADERS to upload only some loaders (e.g. "neoforge forge paper"; default all),
+# LOADERS to upload only some loaders (e.g. "neoforge forge paper"; default all); an upload holding several
+# loaders goes ahead when any of them is listed,
 # and CURSEFORGE_TOKEN / MODRINTH_TOKEN / HANGAR_API_KEY for the platforms being uploaded to.
+# Uploads already on Modrinth or CurseForge are skipped, so a failed run can be re-run.
 # A platform that fails doesn't stop the others; the script exits non-zero at the end.
 set -euo pipefail
 
@@ -83,6 +86,20 @@ display_loader() {
 	esac
 }
 
+# The loaders of an upload for titles, e.g. NeoForge/Forge
+display_loaders() {
+	local loader names=()
+	for loader in "$@"; do
+		names+=("$(display_loader "$loader")")
+	done
+	(IFS=/; echo "${names[*]}")
+}
+
+# The arguments as a JSON array of strings
+json_list() {
+	printf '%s\n' "$@" | jq -R . | jq -s -c .
+}
+
 # Sets jar_loaders (the loaders it runs on, space-separated), mc and game_versions (JSON) for a jar
 read_jar() {
 	local name
@@ -99,13 +116,31 @@ read_jar() {
 	fi
 }
 
-# One "<jar> <loader>" line per upload
+# One "<jar> <loaders>" line per upload, <loaders> joined by _: the jar's NeoForge and Forge together,
+# and Fabric and Paper each on their own
 uploads=()
 for jar in $(ls "$DIST"/InventoryWizard-*.jar | sort -V); do
 	read_jar "$jar"
+	forge_like=()
+	groups=()
 	for loader in $jar_loaders; do
-		if [ -z "${LOADERS:-}" ] || [[ " $LOADERS " == *" $loader "* ]]; then
-			uploads+=("$jar $loader")
+		case $loader in
+			neoforge | forge) forge_like+=("$loader") ;;
+			*) groups+=("$loader") ;;
+		esac
+	done
+	if [ ${#forge_like[@]} -gt 0 ]; then
+		groups=("$(IFS=_; echo "${forge_like[*]}")" "${groups[@]}")
+	fi
+	for group in "${groups[@]}"; do
+		selected=
+		for loader in ${group//_/ }; do
+			if [ -z "${LOADERS:-}" ] || [[ " $LOADERS " == *" $loader "* ]]; then
+				selected=1
+			fi
+		done
+		if [ -n "$selected" ]; then
+			uploads+=("$jar $group")
 		fi
 	done
 done
@@ -114,11 +149,17 @@ if [ ${#uploads[@]} -eq 0 ]; then
 	exit 1
 fi
 
-# Sets jar, loader, mc and game_versions for one of the uploads
+# Sets jar, loaders (array), mc and game_versions for one of the uploads
 read_upload() {
 	jar=${1% *}
 	read_jar "$jar"
-	loader=${1##* }
+	local group=${1##* }
+	read -ra loaders <<<"${group//_/ }"
+}
+
+# Whether the upload holds this loader
+has_loader() {
+	[[ " ${loaders[*]} " == *" $1 "* ]]
 }
 
 # --- Modrinth ---------------------------------------------------------------------------------------
@@ -130,29 +171,31 @@ publish_modrinth() {
 	local upload
 	for upload in "${uploads[@]}"; do
 		read_upload "$upload"
-		local number loaders deps title
-		if [ "$loader" = paper ]; then
+		local number tags deps title
+		if has_loader paper; then
 			number=$VERSION
-			loaders='["paper","spigot"]'
+			tags='["paper","spigot"]'
 			title="InventoryWizard $VERSION (Paper)"
 		else
 			number="$VERSION+$mc"
-			title="InventoryWizard $VERSION ($(display_loader "$loader") $mc)"
-			if [ "$loader" = fabric ]; then
-				loaders='["fabric","quilt"]'
+			title="InventoryWizard $VERSION ($(display_loaders "${loaders[@]}") $mc)"
+			if has_loader fabric; then
+				tags='["fabric","quilt"]'
 			else
-				loaders="[\"$loader\"]"
+				tags=$(json_list "${loaders[@]}")
 			fi
 		fi
-		if [ "$loader" = fabric ]; then
+		if has_loader fabric; then
 			deps="[{\"project_id\":\"$MODRINTH_FABRIC_API\",\"dependency_type\":\"required\"}]"
 		else
 			deps='[]'
 		fi
 
-		# A re-run must not upload the same jar twice
-		if jq -e --arg n "$number" --arg l "$loader" \
-			'any(.[]; .version_number == $n and any(.loaders[]; . == $l))' <<<"$existing" >/dev/null; then
+		# A re-run must not upload the same jar twice. Older releases have one version per loader,
+		# so each loader counts as done when any version of this number has it.
+		if jq -e --arg n "$number" --argjson ls "$(json_list "${loaders[@]}")" \
+			'. as $versions | all($ls[]; . as $l | any($versions[]; .version_number == $n and any(.loaders[]; . == $l)))' \
+			<<<"$existing" >/dev/null; then
 			echo "Modrinth: $title already exists, skipping"
 			continue
 		fi
@@ -162,7 +205,7 @@ publish_modrinth() {
 			--arg name "$title" \
 			--arg number "$number" \
 			--rawfile changelog "$CHANGELOG_FILE" \
-			--argjson loaders "$loaders" \
+			--argjson loaders "$tags" \
 			--argjson game_versions "$game_versions" \
 			--argjson deps "$deps" \
 			'{project_id: $project, name: $name, version_number: $number, changelog: $changelog,
@@ -190,6 +233,14 @@ publish_curseforge() {
 		curl_api -H "X-Api-Token: $CURSEFORGE_TOKEN" "$api/game/versions" >"$work/cf-versions.json"
 	fi
 
+	# The upload API can't list a project's files, so the ones already there come from CFWidget's public
+	# mirror of CurseForge. It caches, so files uploaded in the last few hours may be missing from it.
+	curl_api "https://api.cfwidget.com/$CURSEFORGE_PROJECT" >"$work/cf-existing.json"
+	if ! jq -e '.files | type == "array"' "$work/cf-existing.json" >/dev/null; then
+		echo "::error::CFWidget has no file list for project $CURSEFORGE_PROJECT yet (it may be fetching it); try again in a few minutes" >&2
+		return 1
+	fi
+
 	# Names -> CurseForge game version ids. Minecraft versions are looked up only in the minecraft-* types,
 	# since names such as "1.21" also exist for Bukkit; loaders under modloader, Client under environment.
 	cf_ids() {
@@ -210,20 +261,31 @@ publish_curseforge() {
 	local upload
 	for upload in "${uploads[@]}"; do
 		read_upload "$upload"
-		[ "$loader" = paper ] && continue
+		has_loader paper && continue
 
-		local title other relations ids
-		title="InventoryWizard $VERSION ($(display_loader "$loader") $mc)"
-		case $loader in
-			fabric) other='["Fabric","Quilt","Client"]' ;;
-			neoforge) other='["NeoForge","Client"]' ;;
-			forge) other='["Forge","Client"]' ;;
-		esac
-		if [ "$loader" = fabric ]; then
+		local title other relations ids loader names=() singles=()
+		title="InventoryWizard $VERSION ($(display_loaders "${loaders[@]}") $mc)"
+		for loader in "${loaders[@]}"; do
+			names+=("$(display_loader "$loader")")
+			[ "$loader" = fabric ] && names+=(Quilt)
+			singles+=("InventoryWizard $VERSION ($(display_loader "$loader") $mc)")
+		done
+		other=$(json_list "${names[@]}" Client)
+		if has_loader fabric; then
 			relations='{"projects":[{"slug":"fabric-api","type":"requiredDependency"}]}'
 		else
 			# CurseForge rejects an empty projects list, so leave relations out
 			relations=null
+		fi
+
+		# A re-run must not upload the same jar twice. Older releases have one file per loader, titled
+		# "InventoryWizard <version> (<Loader> <mc>)", so the upload is also done when all of those exist.
+		if jq -e --arg title "$title" --argjson singles "$(json_list "${singles[@]}")" \
+			'.files as $files | any($files[]; .display == $title)
+			 or all($singles[]; . as $t | any($files[]; .display == $t))' \
+			"$work/cf-existing.json" >/dev/null; then
+			echo "CurseForge: $title already exists, skipping"
+			continue
 		fi
 
 		echo "CurseForge: $title -> $(jq -c -n --argjson a "$game_versions" --argjson b "$other" '$a + $b')"
@@ -255,7 +317,7 @@ publish_hangar() {
 	local jar= upload
 	for upload in "${uploads[@]}"; do
 		read_upload "$upload"
-		if [ "$loader" = paper ]; then
+		if has_loader paper; then
 			break
 		fi
 		jar=

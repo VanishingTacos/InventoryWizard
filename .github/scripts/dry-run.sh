@@ -7,8 +7,8 @@
 #
 # Platforms default to modrinth and curseforge. --build runs ./gradlew build first.
 # LOADERS limits the uploads as in publish.sh, e.g. LOADERS="fabric" .github/scripts/dry-run.sh modrinth
-# Modrinth's dry run still reads the project's existing versions from the public API, to show which
-# uploads it would skip; the others send no requests. Needs jq.
+# The Modrinth and CurseForge dry runs still read which files the projects already have (from Modrinth's
+# public API and CFWidget), to show which uploads they would skip; Hangar's sends no requests. Needs jq.
 set -euo pipefail
 
 cd "$(dirname "$0")/../.."

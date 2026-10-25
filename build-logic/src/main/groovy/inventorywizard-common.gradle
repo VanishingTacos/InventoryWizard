@@ -49,17 +49,28 @@ tasks.withType(Jar).configureEach {
 	}
 }
 
-// Built jars go to versions/<mc version>-<loader>/ at the repo root; common is only compiled into the others
+// The loaders whose jars for this Minecraft version are merged into one (see inventorywizard-merged):
+// NeoForge and Forge always, and Fabric where Minecraft is unobfuscated (26.1+). Before that Fabric's
+// classes are remapped to intermediary, so it keeps its own jar.
+if (isVersioned) {
+	ext.mergedLoaders = ['neoforge', 'forge'] + (stonecutter.eval(project.name, '>=26.1') ? ['fabric'] : [])
+}
+
+// Built jars go to versions/<mc version>-<loader>/ at the repo root; common is only compiled into the others.
+// Jars that only go into the merged jar stay in build/libs, so versions/ holds just the jars that ship.
 if (loaderName != 'common') {
 	def jarDirectory = rootProject.layout.projectDirectory.dir(isVersioned
 			? "versions/${project.name}-${loaderName}"
 			: "versions/${project.paper_api_level}-${loaderName}")
 	// Every Minecraft version builds the same mod version, so tell the jars apart by name
 	def jarVersion = isVersioned ? "${project.version}+${project.name}" : project.version
+	def merged = isVersioned && loaderName in ext.mergedLoaders
 	ext.jarDirectory = jarDirectory
 	ext.jarVersion = jarVersion
 	tasks.withType(Jar).configureEach {
-		destinationDirectory = jarDirectory
+		if (!merged) {
+			destinationDirectory = jarDirectory
+		}
 		archiveVersion = jarVersion
 	}
 }

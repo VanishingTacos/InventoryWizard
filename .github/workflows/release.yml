@@ -25,7 +25,7 @@ on:
         type: boolean
         default: false
       loaders:
-        description: Jars to upload, to re-run part of a failed upload
+        description: Loaders to upload, to re-run part of a failed upload (NeoForge and Forge share one upload, sent if either is listed)
         type: string
         default: fabric neoforge forge paper
 
