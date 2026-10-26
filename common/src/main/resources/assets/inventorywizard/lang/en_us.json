@@ -54,6 +54,8 @@
 	"inventorywizard.config.feature.inventory.tooltip": "Your main inventory (excluding the hotbar).",
 	"inventorywizard.config.feature.hotbar": "Hotbar",
 	"inventorywizard.config.feature.hotbar.tooltip": "Your hotbar.",
+	"inventorywizard.config.scroll_adjusts_stack": "Scroll Held Stack",
+	"inventorywizard.config.scroll_adjusts_stack.tooltip": "While carrying a stack, scroll up to take one more item from the slot you picked it up from, or down to put one back.",
 	"inventorywizard.config.header.partial_stacks": "Sort Partial Stacks In",
 	"inventorywizard.config.partial_stacks.chest": "Containers",
 	"inventorywizard.config.partial_stacks.chest.tooltip": "When off, leftover partial stacks in containers are placed after all full stacks.",

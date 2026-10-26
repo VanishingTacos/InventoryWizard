@@ -59,7 +59,8 @@ public class InventoryWizardConfigScreen extends OptionsSubScreen {
                 bool("feature.shulker_box", features.shulkerSorting, v -> features.shulkerSorting = v),
                 bool("feature.ender_chest", features.enderChestSorting, v -> features.enderChestSorting = v),
                 bool("feature.inventory", features.inventorySorting, v -> features.inventorySorting = v),
-                bool("feature.hotbar", features.hotbarSorting, v -> features.hotbarSorting = v));
+                bool("feature.hotbar", features.hotbarSorting, v -> features.hotbarSorting = v),
+                bool("scroll_adjusts_stack", config.scrollAdjustsStack, v -> config.scrollAdjustsStack = v));
 
         //? if >=1.21.11
         list.addHeader(Component.translatable("inventorywizard.config.header.partial_stacks"));

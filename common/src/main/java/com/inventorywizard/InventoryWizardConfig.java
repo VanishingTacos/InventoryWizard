@@ -30,6 +30,8 @@ public class InventoryWizardConfig {
     public boolean showMessages = true;
     /** Sort and mode buttons in the inventory, chest and shulker box screens. */
     public boolean showButtons = true;
+    /** While carrying a stack, scroll up takes one more item from the slot it came from and scroll down puts one back. */
+    public boolean scrollAdjustsStack = true;
     public Features features = new Features();
 
     /** When false, leftover partial stacks are placed after all full stacks instead of being sorted in. */

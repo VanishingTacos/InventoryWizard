@@ -29,4 +29,7 @@ public interface AbstractContainerScreenAccessor {
 
     @Accessor("inventoryLabelY")
     int inventorywizard$getInventoryLabelY();
+
+    @Accessor("isQuickCrafting")
+    boolean inventorywizard$isQuickCrafting();
 }

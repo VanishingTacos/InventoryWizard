@@ -29,10 +29,11 @@ Need help, found a bug or have an idea? Join the Discord!
 - **Three modes**: Default, Alphabetical and Stack-based
 - **Sort buttons** in the inventory, chest and shulker box screens, plus one to switch modes
 - **Locked slots** that sorting never moves: **Alt+Click** a hotbar or inventory slot to lock it (`/iwiz lock [slot]` on Paper)
+- **Scroll to adjust a held stack**: after picking up a stack, scroll up to take one more item from its slot or down to put one back (mod only, works on any server)
 - **Works on** the inventory, hotbar, chests, barrels, shulker boxes and ender chests
 
 ## Quick Start
-1. Download the jar for your loader and Minecraft version (`InventoryWizard-<loader>-<version>+<minecraft>.jar`) from the [releases page](https://github.com/VanishingTacos/inventorywizard/releases) (Fabric/Quilt also needs [Fabric API](https://modrinth.com/mod/fabric-api))
+1. Download the jar for your Minecraft version from the [releases page](https://github.com/VanishingTacos/inventorywizard/releases): `InventoryWizard-<loaders>-<version>+<minecraft>.jar`, where `<loaders>` lists the loaders that jar runs on. From 26.1 one jar covers Fabric, Quilt, NeoForge and Forge; before that, NeoForge and Forge share a jar and Fabric/Quilt has its own. Fabric/Quilt also needs [Fabric API](https://modrinth.com/mod/fabric-api)
 2. Drop it into `.minecraft/mods` (or `plugins` for Paper/Spigot)
 3. Press **`R`** or **Shift+Right Click** in any inventory to sort, or click the **sort button** next to the inventory or chest title
 

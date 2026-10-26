@@ -1,0 +1,125 @@
+// Applied to the NeoForge projects: builds one jar that also loads on Forge, and on Fabric/Quilt
+// where Minecraft is unobfuscated (26.1+). Every loader then runs the same common classes, so the jar
+// holds them once, plus each loader's own package and metadata, which the other loaders ignore.
+// Before 26.1 Fabric's classes are remapped to intermediary, so Fabric keeps its own jar there.
+import java.util.jar.JarFile
+
+// In the order the loaders are named in the jar; set in inventorywizard-common
+def loaders = mergedLoaders
+def mergeFabric = 'fabric' in loaders
+// The common classes come from this loader's jar. Fabric's is compiled against plain vanilla, so it
+// only uses what every loader has; NeoForge and Forge widen access with access transformers, which
+// can leave traces in their class files (e.g. an inner class marked public).
+def baseLoader = mergeFabric ? 'fabric' : 'neoforge'
+
+// The files in each loader's jar that belong to that loader alone
+def ownFiles = [
+		neoforge: ['com/inventorywizard/neoforge/**', 'META-INF/neoforge.mods.toml'],
+		forge   : ['com/inventorywizard/forge/**', 'META-INF/mods.toml', 'pack.mcmeta'],
+		fabric  : ['com/inventorywizard/fabric/**', 'fabric.mod.json'],
+]
+// Made per jar, from the loaders it holds
+def notShared = ['META-INF/MANIFEST.MF', 'META-INF/services/**', 'LICENSE_*']
+
+def loaderJars = loaders.collectEntries { loader ->
+	if (loader == 'neoforge') {
+		return [(loader): files(tasks.named('jar', Jar).flatMap { it.archiveFile })]
+	}
+	def configuration = configurations.create("${loader}LoaderJar") {
+		canBeResolved = true
+		canBeConsumed = false
+	}
+	dependencies.add(configuration.name, dependencies.project(path: ":$loader:${project.name}", configuration: 'loaderJar'))
+	[(loader): configuration]
+}
+
+def servicesDir = layout.buildDirectory.dir('generated/merged/services')
+def generateMergedServices = tasks.register('generateMergedServices') {
+	def providers = loaders.collect { "com.inventorywizard.${it}.${[neoforge: 'NeoForge', forge: 'Forge', fabric: 'Fabric'][it]}Platform" }
+	inputs.property 'providers', providers
+	outputs.dir servicesDir
+	doLast {
+		def file = servicesDir.get().file('META-INF/services/com.inventorywizard.platform.Platform').asFile
+		file.parentFile.mkdirs()
+		file.text = providers.join('\n') + '\n'
+	}
+}
+
+// Every loader's jar has to hold its metadata and the same common files, so the merged jar leaves nothing out, and
+// none of them may name intermediary classes (net/minecraft/class_1234), which only Fabric understands.
+def checkMergedJar = tasks.register('checkMergedJar') {
+	loaderJars.each { loader, jar -> inputs.files(jar).withPropertyName("${loader}Jar") }
+	def jars = loaderJars
+	def own = ownFiles
+	def skipped = notShared
+	def mc = project.name
+	doLast {
+		def matches = { String name, List<String> patterns ->
+			patterns.any { it.endsWith('/**') ? name.startsWith(it - '**') : (it.endsWith('*') ? name.startsWith(it - '*') : name == it) }
+		}
+		def intermediary = 'net/minecraft/class_'.getBytes('UTF-8')
+		def common = jars.collectEntries { loader, jar ->
+			new JarFile(jar.singleFile).withCloseable { file ->
+				def metadata = own[loader].findAll { !it.contains('*') }.findAll { file.getEntry(it) == null }
+				if (metadata) {
+					throw new GradleException("The $loader jar for $mc is missing $metadata")
+				}
+				def entries = file.entries().toList().findAll { !it.directory && !matches(it.name, skipped + own[loader]) }
+				def remapped = entries.findAll { entry ->
+					def bytes = file.getInputStream(entry).bytes
+					(0..bytes.length - intermediary.length).any { i -> (0..<intermediary.length).every { bytes[i + it] == intermediary[it] } }
+				}
+				if (remapped) {
+					throw new GradleException("The $loader jar for $mc uses intermediary names in ${remapped*.name}")
+				}
+				[(loader): entries*.name as Set]
+			}
+		}
+		common.each { loader, names ->
+			if (names != common.neoforge) {
+				throw new GradleException("The $loader and NeoForge jars for $mc have different common files: " +
+						"only in $loader: ${names - common.neoforge}, only in NeoForge: ${common.neoforge - names}")
+			}
+		}
+	}
+}
+
+def mergedJar = tasks.register('mergedJar', Jar) {
+	group = 'build'
+	description = "Builds the jar for ${loaders.join(', ')}."
+	dependsOn(checkMergedJar)
+
+	archiveBaseName = "${rootProject.archives_base_name}-${loaders.join('_')}"
+	destinationDirectory = rootProject.layout.projectDirectory.dir("versions/${project.name}-merged")
+
+	loaderJars.each { loader, jar ->
+		from({ zipTree(jar.singleFile) }) {
+			if (loader == baseLoader) {
+				exclude notShared
+			} else {
+				include ownFiles[loader]
+			}
+		}
+	}
+	from(generateMergedServices)
+
+	// Forge only finds mixin configs through the manifest; Fabric Loader reads its attributes
+	// (e.g. the mapping namespace) from there too
+	manifest {
+		attributes['MixinConfigs'] = "${project.mod_id}.mixins.json"
+	}
+	if (mergeFabric) {
+		def fabricJar = loaderJars.fabric
+		doFirst {
+			new JarFile(fabricJar.singleFile).withCloseable { jar ->
+				jar.manifest.mainAttributes.each { key, value ->
+					if (key.toString().startsWith('Fabric-')) manifest.attributes[key.toString()] = value.toString()
+				}
+			}
+		}
+	}
+}
+
+tasks.named('assemble') {
+	dependsOn(mergedJar)
+}

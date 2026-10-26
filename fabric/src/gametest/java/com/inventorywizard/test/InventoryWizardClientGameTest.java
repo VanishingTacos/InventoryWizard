@@ -102,6 +102,7 @@ public class InventoryWizardClientGameTest implements FabricClientGameTest {
             testCycleModeSlot(context, server);
             testPartialStacksOff(context, server);
             testLockedSlots(context, server);
+            testScrollAdjustsHeldStack(context, server);
             testBlockContainer(context, server, Blocks.CHEST, new BlockPos(2, 0, 0), ContainerScreen.class, Input.SORT_KEY_NO_HOVER, "chest");
             testBlockContainer(context, server, Blocks.BARREL, new BlockPos(0, 0, 2), ContainerScreen.class, Input.SHIFT_RIGHT_CLICK, "barrel");
             testBlockContainer(context, server, Blocks.SHULKER_BOX, new BlockPos(0, 0, -2), ShulkerBoxScreen.class, Input.SORT_KEY_HOVER, "shulker_box");
@@ -287,6 +288,47 @@ public class InventoryWizardClientGameTest implements FabricClientGameTest {
             InventoryWizard.config().save();
         });
         closeScreen(context);
+    }
+
+    private static void testScrollAdjustsHeldStack(ClientGameTestContext context, TestServerContext server) {
+        server.runOnServer(s -> {
+            Inventory inv = player(s).getInventory();
+            inv.clearContent();
+            inv.setItem(9, new ItemStack(Items.DIRT, 10));
+        });
+
+        openInventory(context);
+        hoverSlot(context, inventorySlot(9));
+        context.getInput().pressMouse(InputConstants.MOUSE_BUTTON_LEFT);
+        context.waitTicks(2);
+        assertEquals("carried after picking up", "dirt x10", carried(server));
+
+        // Away from the origin slot, so only the mod moves items
+        hoverSlot(context, inventorySlot(20));
+        context.getInput().scroll(-1);
+        context.getInput().scroll(-1);
+        context.waitTicks(SORT_WAIT_TICKS);
+        assertEquals("carried after scrolling down twice", "dirt x8", carried(server));
+        assertEquals("origin after scrolling down twice", "dirt x2", inventoryRange(server, 9, 10).getFirst());
+
+        for (int i = 0; i < 3; i++) {
+            context.getInput().scroll(1);
+        }
+        context.waitTicks(SORT_WAIT_TICKS);
+        assertEquals("carried after scrolling up past what the slot had", "dirt x10", carried(server));
+        assertEquals("origin emptied by scrolling up", "-", inventoryRange(server, 9, 10).getFirst());
+        assertEquals("hovered slot untouched", "-", inventoryRange(server, 20, 21).getFirst());
+
+        hoverSlot(context, inventorySlot(9));
+        context.getInput().pressMouse(InputConstants.MOUSE_BUTTON_LEFT);
+        context.waitTicks(2);
+        assertEquals("stack put back", "dirt x10", inventoryRange(server, 9, 10).getFirst());
+        closeScreen(context);
+    }
+
+    /** The server's view of the cursor stack, so it also checks the clicks reached the server. */
+    private static String carried(TestServerContext server) {
+        return server.computeOnServer(s -> describe(player(s).containerMenu.getCarried()));
     }
 
     private enum Input {

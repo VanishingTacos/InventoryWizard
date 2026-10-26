@@ -43,6 +43,12 @@ public class InventoryWizardNeoForge {
                 event.setCanceled(true);
             }
         });
+        bus.addListener(ScreenEvent.MouseScrolled.Pre.class, event -> {
+            if (InventoryWizard.handlesScreen(event.getScreen())
+                    && InventoryWizard.onMouseScroll(Minecraft.getInstance(), (AbstractContainerScreen<?>) event.getScreen(), event.getScrollDeltaY())) {
+                event.setCanceled(true);
+            }
+        });
         bus.addListener(ScreenEvent.KeyPressed.Pre.class, event -> {
             if (InventoryWizard.handlesScreen(event.getScreen())
                     && InventoryWizard.onKeyPress(Minecraft.getInstance(), (AbstractContainerScreen<?>) event.getScreen(),

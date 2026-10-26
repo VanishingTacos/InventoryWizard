@@ -1,7 +1,8 @@
-# Builds the Fabric, NeoForge and Forge jars for every Minecraft version, plus the Paper jar, on every push and PR.
+# Builds the mod jars for every Minecraft version (one multi-loader jar each, plus a Fabric jar before 26.1),
+# plus the Paper jar, on every push and PR.
 # Pushes to main also (re)create a draft release named after `version` in gradle.properties,
 # with release notes made from the conventional commits since the previous release tag.
-# Running it by hand on main with any of the curseforge/modrinth/hangar boxes ticked also uploads the jars there
+# Running it by hand on main with the modrinth and/or hangar box ticked also uploads the jars there
 # (see .github/scripts/publish.sh), using that release's notes as the changelog.
 name: Build & Draft Release
 
@@ -11,10 +12,6 @@ on:
   pull_request:
   workflow_dispatch:
     inputs:
-      curseforge:
-        description: Upload the Fabric, NeoForge and Forge jars to CurseForge
-        type: boolean
-        default: false
       modrinth:
         description: Upload every jar to Modrinth
         type: boolean
@@ -24,7 +21,7 @@ on:
         type: boolean
         default: false
       loaders:
-        description: Jars to upload, to re-run part of a failed upload
+        description: Loaders to upload, to re-run part of a failed upload (a jar for several loaders is sent if any of them is listed)
         type: string
         default: fabric neoforge forge paper
 
@@ -62,19 +59,11 @@ jobs:
           chmod +x gradlew
           ./gradlew build --stacktrace
 
-      # Only the jars players install: no -sources jars, and not Paper's unshaded -plain jar.
-      # Mod jars are versions/<mc>-<loader>/InventoryWizard-<loader>-<version>+<mc>.jar
+      # Only the jars players install; see .github/scripts/collect-jars.sh
       - name: Collect jars
         env:
           VERSION: ${{ steps.version.outputs.version }}
-        run: |
-          mkdir -p dist
-          for loader in fabric neoforge forge; do
-            cp versions/*-$loader/InventoryWizard-$loader-$VERSION+*.jar dist/
-          done
-          rm -f dist/*-sources.jar
-          cp versions/*-paper/InventoryWizard-paper-$VERSION.jar dist/
-          ls -l dist
+        run: bash .github/scripts/collect-jars.sh
 
       - uses: actions/upload-artifact@v4
         with:
@@ -181,7 +170,7 @@ jobs:
     needs: [build, release]
     if: >-
       github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
-      && (inputs.curseforge || inputs.modrinth || inputs.hangar)
+      && (inputs.modrinth || inputs.hangar)
     runs-on: ubuntu-latest
     permissions:
       # Writing is needed to read a draft release's notes
@@ -201,15 +190,13 @@ jobs:
       - name: Read release notes
         run: gh release view "$TAG_PREFIX$VERSION" --json body --jq .body > notes.md
 
-      - name: Upload to CurseForge, Modrinth and Hangar
+      - name: Upload to Modrinth and Hangar
         env:
           CHANGELOG_FILE: notes.md
-          CURSEFORGE_TOKEN: ${{ secrets.CURSEFORGE_TOKEN }}
           MODRINTH_TOKEN: ${{ secrets.MODRINTH_TOKEN }}
           HANGAR_API_KEY: ${{ secrets.HANGAR_API_KEY }}
           LOADERS: ${{ inputs.loaders }}
           PLATFORMS: >-
-            ${{ inputs.curseforge && 'curseforge' || '' }}
             ${{ inputs.modrinth && 'modrinth' || '' }}
             ${{ inputs.hangar && 'hangar' || '' }}
         run: |

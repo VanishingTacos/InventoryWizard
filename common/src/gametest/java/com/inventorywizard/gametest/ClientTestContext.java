@@ -227,6 +227,16 @@ public final class ClientTestContext {
         });
     }
 
+    /** One vertical wheel step per call; positive scrolls up. */
+    public void scroll(double amount) {
+        runOnClient(client -> {
+            //? if >=26.3 {
+            client.mouseHandler.onScroll(windowHandle(client), 0, amount);
+            //?} else
+            //invoke(client.mouseHandler, "onScroll", new Class<?>[] {long.class, double.class, double.class}, windowHandle(client), 0.0, amount);
+        });
+    }
+
     /** Moves the cursor to a GUI-scaled position, as the mouse would. */
     public void setCursorGui(double x, double y) {
         runOnClient(client -> {

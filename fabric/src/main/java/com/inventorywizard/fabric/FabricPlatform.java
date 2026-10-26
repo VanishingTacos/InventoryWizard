@@ -14,6 +14,14 @@ import java.util.List;
 /** Also used on Quilt, which implements the Fabric Loader API. */
 public class FabricPlatform implements Platform {
 
+    /** Sinytra Connector brings the Fabric Loader API to NeoForge, which then loads this jar as a NeoForge mod. */
+    @Override
+    public boolean isActive() {
+        return Platform.classExists("net.fabricmc.loader.api.FabricLoader")
+                && !Platform.classExists("net.neoforged.fml.loading.FMLLoader")
+                && !Platform.classExists("net.minecraftforge.fml.loading.FMLLoader");
+    }
+
     @Override
     public Path configDir() {
         return FabricLoader.getInstance().getConfigDir();

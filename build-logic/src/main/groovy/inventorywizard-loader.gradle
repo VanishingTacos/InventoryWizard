@@ -37,3 +37,16 @@ tasks.named('sourcesJar', Jar) {
 	from(configurations.commonJava)
 	from(configurations.commonResources)
 }
+
+// The jar for the multi-loader jar to take this loader's classes and metadata from (see inventorywizard-merged).
+// Fabric's is only merged where Minecraft is unobfuscated, so this is always the unremapped jar.
+configurations {
+	loaderJar {
+		canBeResolved = false
+		canBeConsumed = true
+	}
+}
+
+artifacts {
+	loaderJar(tasks.named('jar'))
+}

@@ -45,6 +45,8 @@ public class InventoryWizardFabric implements ClientModInitializer {
             ScreenKeyboardEvents.allowKeyPress(screen).register((s, key, scancode, modifiers) ->
                     !InventoryWizard.onKeyPress(client, containerScreen, key, scancode));
             *///?}
+            ScreenMouseEvents.allowMouseScroll(screen).register((s, mouseX, mouseY, horizontal, vertical) ->
+                    !InventoryWizard.onMouseScroll(client, containerScreen, vertical));
         });
 
         ClientCommandRegistrationCallback.EVENT.register((dispatcher, buildContext) -> InventoryWizard.registerCommands(dispatcher));

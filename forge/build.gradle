@@ -40,6 +40,15 @@ dependencies {
 	implementation minecraft.dependency("net.minecraftforge:forge:${project.forge_version}")
 }
 
+// merge-source-sets compiles classes into the resources folder, and a full recompile empties it (META-INF included),
+// so the resources have to be copied in after compiling
+tasks.named('processResources') {
+	mustRunAfter('compileJava')
+}
+tasks.named('processTestResources') {
+	mustRunAfter('compileTestJava')
+}
+
 // The test mod's mods.toml names the Forge loader version too
 tasks.named('processTestResources', ProcessResources) {
 	def props = resourceProperties

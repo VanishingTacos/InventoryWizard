@@ -15,6 +15,11 @@ import java.util.List;
 public class NeoForgePlatform implements Platform {
 
     @Override
+    public boolean isActive() {
+        return Platform.classExists("net.neoforged.fml.loading.FMLLoader");
+    }
+
+    @Override
     public Path configDir() {
         return FMLPaths.CONFIGDIR.get();
     }
