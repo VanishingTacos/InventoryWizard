@@ -87,6 +87,20 @@ if (obfuscated) {
 			archiveVersion = jarVersion
 		}
 	}
+} else if (!('fabric' in mergedLoaders)) {
+	// A standalone jar on unobfuscated Minecraft stays in build/libs and is copied to versions/ to ship
+	def shippedJars = tasks.named('jar', Jar)
+	def shippedSourcesJar = tasks.named('sourcesJar', Jar)
+	[shippedJars, shippedSourcesJar]*.configure {
+		destinationDirectory = layout.buildDirectory.dir('libs')
+	}
+	def copyJarsToVersions = tasks.register('copyJarsToVersions', Copy) {
+		from(shippedJars, shippedSourcesJar)
+		into(jarDirectory)
+	}
+	tasks.named('assemble') {
+		dependsOn(copyJarsToVersions)
+	}
 }
 
 if (hasClientGameTests) {

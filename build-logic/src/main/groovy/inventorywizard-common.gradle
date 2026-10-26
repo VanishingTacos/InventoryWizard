@@ -51,9 +51,13 @@ tasks.withType(Jar).configureEach {
 
 // The loaders whose jars for this Minecraft version are merged into one (see inventorywizard-merged):
 // NeoForge and Forge always, and Fabric where Minecraft is unobfuscated (26.1+). Before that Fabric's
-// classes are remapped to intermediary, so it keeps its own jar.
+// classes are remapped to intermediary, so it keeps its own jar. The merged jar is built by the NeoForge
+// project, so a Minecraft version only Fabric is built for (e.g. a snapshot) gets a Fabric jar of its own.
 if (isVersioned) {
-	ext.mergedLoaders = ['neoforge', 'forge'] + (stonecutter.eval(project.name, '>=26.1') ? ['fabric'] : [])
+	def hasNeoForge = rootProject.findProject(":neoforge:${project.name}") != null
+	ext.mergedLoaders = hasNeoForge
+			? ['neoforge', 'forge'] + (stonecutter.eval(project.name, '>=26.1') ? ['fabric'] : [])
+			: []
 }
 
 // Built jars go to versions/<mc version>-<loader>/ at the repo root; common is only compiled into the others.
