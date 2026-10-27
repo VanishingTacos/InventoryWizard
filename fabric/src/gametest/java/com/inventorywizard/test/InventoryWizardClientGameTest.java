@@ -19,6 +19,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.events.ContainerEventHandler;
 import net.minecraft.client.gui.components.events.GuiEventListener;
+import net.minecraft.client.gui.screens.ConfirmScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
@@ -102,6 +103,7 @@ public class InventoryWizardClientGameTest implements FabricClientGameTest {
             context.waitTicks(5);
             pace(context);
 
+            testConfigScreenInWorld(context);
             testInventoryShiftRightClick(context, server);
             testSortKeyOnHotbar(context, server);
             testCycleModeSlot(context, server);
@@ -140,10 +142,46 @@ public class InventoryWizardClientGameTest implements FabricClientGameTest {
         boolean reloaded = context.computeOnClient(client -> InventoryWizardConfig.load().showMessages);
         assertEquals("show messages saved when the screen closes", false, reloaded);
 
+        context.setScreen(() -> new InventoryWizardConfigScreen(new TitleScreen()));
+        context.waitForScreen(InventoryWizardConfigScreen.class);
+        clickWidget(context, "Reset to Defaults");
+        context.waitForScreen(ConfirmScreen.class);
+        context.clickScreenButton("gui.yes");
+        context.waitForScreen(InventoryWizardConfigScreen.class);
+        boolean reset = context.computeOnClient(client -> InventoryWizardConfig.load().showMessages);
+        assertEquals("show messages saved as the default after resetting", true, reset);
+        context.clickScreenButton("gui.done");
+        context.waitForScreen(TitleScreen.class);
+
         context.runOnClient(client -> {
             InventoryWizard.config().showMessages = true;
             InventoryWizard.config().save();
         });
+    }
+
+    /** In a world, where items can be drawn on every version: the item icons and the sort preview. */
+    private static void testConfigScreenInWorld(ClientGameTestContext context) {
+        context.setScreen(() -> new InventoryWizardConfigScreen(null));
+        context.waitForScreen(InventoryWizardConfigScreen.class);
+        context.takeScreenshot("inventorywizard-config-screen-world");
+
+        // The rest of the list
+        context.getInput().setCursorPos(context.computeOnClient(client -> client.getWindow().getScreenWidth() / 2.0),
+                context.computeOnClient(client -> client.getWindow().getScreenHeight() / 2.0));
+        context.getInput().scroll(-30);
+        context.waitTicks(2);
+        context.takeScreenshot("inventorywizard-config-screen-bottom");
+        context.getInput().scroll(30);
+        context.waitTicks(2);
+
+        // The preview mid-slide, then back to the default mode for the tests that follow
+        clickWidget(context, "Sorting Mode");
+        context.takeScreenshot("inventorywizard-config-screen-mode");
+        assertEquals("sort mode after clicking its button", SortMode.ALPHABETICAL,
+                context.computeOnClient(client -> InventoryWizard.config().sortMode));
+        context.runOnClient(client -> InventoryWizard.config().sortMode = SortMode.DEFAULT);
+        context.setScreen(() -> null);
+        context.waitTicks(2);
     }
 
     // ---- singleplayer tests -------------------------------------------------

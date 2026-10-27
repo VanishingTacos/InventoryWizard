@@ -6,6 +6,18 @@ All notable changes to InventoryWizard. The release workflow copies the section 
 Add changes under **Unreleased** as you make them. When you bump the version, rename that heading to
 `## [x.y.z] - YYYY-MM-DD` and start a new empty **Unreleased** section above it.
 
+## Unreleased
+
+### Changed
+- Redesigned settings screen: options are grouped into Sorting, Feedback, Sorting Enabled For, Sort Partial Stacks In and Other sections on every Minecraft version, and each sort mode explains itself in its tooltip.
+- Options that do nothing with the current settings are greyed out: volume and pitch while the sort sound is off, and the partial stack options in Stack-based mode.
+
+### Added
+- **Settings:** a magical new look: a shimmering two-tone title with twinkling sparkles, rotating tips, gold section headings, item icons on the buttons, and green/red ON/OFF values.
+- **Settings:** a live **sort preview** under Sorting Mode that sorts sample items with your settings and animates them into place when you change modes. From Minecraft 26.1 it appears once you're in a world, since items aren't available on the title screen.
+- **Settings:** a sound pitch slider and a **Preview Sound** button.
+- **Settings:** **Reset to Defaults** (with a confirmation; locked slots are kept), **Unlock All Slots**, and a shortcut to the key binds.
+
 ## [2.3.1] - 2026-10-27
 
 ### Added

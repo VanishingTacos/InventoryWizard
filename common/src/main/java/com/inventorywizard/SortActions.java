@@ -321,20 +321,26 @@ public final class SortActions {
         InventoryWizardConfig config = InventoryWizard.config();
 
         if (config.playSound) {
-            Identifier id = Identifier.tryParse(config.sound.id);
-            //? if >=1.21.2 {
-            SoundEvent sound = id == null ? null : BuiltInRegistries.SOUND_EVENT.getValue(id);
-            //?} else
-            //SoundEvent sound = id == null ? null : BuiltInRegistries.SOUND_EVENT.get(id);
-            if (sound != null) {
-                client.getSoundManager().play(SimpleSoundInstance.forUI(sound, config.sound.pitch + feedback.pitchOffset(), config.sound.volume));
-            }
+            playSound(client, feedback.pitchOffset());
         }
         if (config.showMessages && client.player != null) {
             //? if >=26.1 {
             client.player.sendOverlayMessage(feedback.message());
             //?} else
             //client.player.displayClientMessage(feedback.message(), true);
+        }
+    }
+
+    /** Plays the configured sort sound, whether or not sounds are turned on; the settings screen previews it this way. */
+    public static void playSound(Minecraft client, float pitchOffset) {
+        InventoryWizardConfig.Sound config = InventoryWizard.config().sound;
+        Identifier id = Identifier.tryParse(config.id);
+        //? if >=1.21.2 {
+        SoundEvent sound = id == null ? null : BuiltInRegistries.SOUND_EVENT.getValue(id);
+        //?} else
+        //SoundEvent sound = id == null ? null : BuiltInRegistries.SOUND_EVENT.get(id);
+        if (sound != null) {
+            client.getSoundManager().play(SimpleSoundInstance.forUI(sound, config.pitch + pitchOffset, config.volume));
         }
     }
 }
