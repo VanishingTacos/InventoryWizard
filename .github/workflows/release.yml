@@ -1,7 +1,7 @@
 # Builds the mod jars for every Minecraft version (one multi-loader jar each, plus a Fabric jar before 26.1),
 # plus the Paper jar, on every push and PR.
 # Pushes to main also (re)create a draft release named after `version` in gradle.properties,
-# with release notes made from the conventional commits since the previous release tag.
+# with release notes taken from that version's section of CHANGELOG.md.
 # Running it by hand on main with the modrinth and/or hangar box ticked also uploads the jars there
 # (see .github/scripts/publish.sh), using that release's notes as the changelog.
 name: Build & Draft Release
@@ -82,8 +82,6 @@ jobs:
       VERSION: ${{ needs.build.outputs.version }}
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - uses: actions/download-artifact@v4
         with:
@@ -109,49 +107,35 @@ jobs:
         env:
           TAG: ${{ steps.existing.outputs.tag }}
         run: |
-          # Highest version tag already in history (several old tags share one commit, so not git describe)
-          prev=$(git tag --merged HEAD --list "$TAG_PREFIX*" --sort=-v:refname | grep -vxF "$TAG" | head -n1 || true)
-          range=${prev:+$prev..}HEAD
-
-          # "type(scope): message" -> "**scope:** message (sha)", grouped by type
-          section() {
-            local title=$1 pattern=$2
-            local lines
-            lines=$(git log --no-merges --format='%h %s' "$range" \
-              | grep -E "^[0-9a-f]+ ($pattern)(\([^)]*\))?!?: " \
-              | grep -vE '^[0-9a-f]+ chore(\([^)]*\))?: update version' \
-              | sed -E 's/^([0-9a-f]+) [a-z]+\(([^)]*)\)!?: (.*)$/- **\2:** \3 (\1)/; s/^([0-9a-f]+) [a-z]+!?: (.*)$/- \2 (\1)/' || true)
-            if [ -n "$lines" ]; then
-              printf '## %s\n\n%s\n\n' "$title" "$lines"
-            fi
-          }
+          # The body of CHANGELOG.md's "## [<version>]" section, without leading or trailing blank lines
+          changes=$(awk -v heading="## [$VERSION]" '
+            /^## \[/ { if (found) exit; found = index($0, heading) == 1; next }
+            found' CHANGELOG.md | sed -e '/./,$!d' | sed -e ':a' -e '/^\n*$/{$d;N;ba' -e '}')
+          if [ -z "$changes" ]; then
+            # Still drafted so the jars can be tried, but the publish job refuses notes with this marker
+            echo "::warning::CHANGELOG.md has no '## [$VERSION]' section; the draft release says so and won't publish to Modrinth or Hangar"
+            changes="<!-- missing-changelog -->
+          > **No changelog yet:** add a \`## [$VERSION]\` section to CHANGELOG.md, or edit these notes before publishing."
+          fi
 
           {
-            section 'Features' 'feat'
-            section 'Fixes' 'fix'
-            section 'Performance' 'perf'
-            section 'Other changes' 'refactor|docs|test|build|ci|chore|style'
+            echo "$changes"
+            echo
             echo '## Downloads'
             echo
-            echo "Pick the jar for your loader and Minecraft version: \`InventoryWizard-<loader>-$VERSION+<minecraft>.jar\`."
-            echo "The table below lists the Minecraft versions each jar supports."
+            echo "Pick the jar for your Minecraft version and loader. From 26.1 one jar covers Fabric, Quilt, NeoForge and Forge;"
+            echo "before that, NeoForge and Forge share a jar and Fabric/Quilt has its own. Fabric and Quilt also need"
+            echo "[Fabric API](https://modrinth.com/mod/fabric-api). The Paper jar runs on Paper and Spigot 1.21 and newer:"
+            echo "\`$(cd dist && ls InventoryWizard-paper-*.jar)\`."
             echo
-            echo "- **Fabric / Quilt:** \`InventoryWizard-fabric-$VERSION+<minecraft>.jar\`"
-            echo "- **NeoForge:** \`InventoryWizard-neoforge-$VERSION+<minecraft>.jar\`"
-            echo "- **Forge:** \`InventoryWizard-forge-$VERSION+<minecraft>.jar\`"
-            echo "- **Paper / Spigot (1.21 and newer):** \`InventoryWizard-paper-$VERSION.jar\`"
-            echo
-            echo "| Jar | Minecraft |"
+            echo "| Minecraft | Jars |"
             echo "| --- | --- |"
             for f in $(ls props/*.properties | sort -V); do
               mc=$(basename "$f" .properties)
               range=$(grep -E '^mods_toml_minecraft_range=' "$f" | cut -d= -f2)
-              echo "| \`+$mc\` | \`$range\` |"
+              jars=$(cd dist && ls -- *"+$mc.jar" | sed 's/.*/`&`/' | paste -sd ' ' | sed 's/` `/`<br>`/g')
+              echo "| \`$range\` | $jars |"
             done
-            if [ -n "$prev" ]; then
-              echo
-              echo "**Full changelog:** https://github.com/$GITHUB_REPOSITORY/compare/$prev...$TAG"
-            fi
           } > notes.md
           cat notes.md
 
@@ -188,7 +172,12 @@ jobs:
 
       # The release job may have skipped an already published release, so read the notes back from GitHub
       - name: Read release notes
-        run: gh release view "$TAG_PREFIX$VERSION" --json body --jq .body > notes.md
+        run: |
+          gh release view "$TAG_PREFIX$VERSION" --json body --jq .body > notes.md
+          if grep -q 'missing-changelog' notes.md; then
+            echo "::error::The $TAG_PREFIX$VERSION release has no changelog; add a '## [$VERSION]' section to CHANGELOG.md (or edit the release notes) first"
+            exit 1
+          fi
 
       - name: Upload to Modrinth and Hangar
         env:
