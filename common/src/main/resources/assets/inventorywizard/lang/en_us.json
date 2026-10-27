@@ -21,7 +21,7 @@
 	"inventorywizard.message.unsupported_container": "InventoryWizard can't sort this container.",
 	"inventorywizard.message.slot_locked": "🔒 Slot locked: sorting will leave it alone",
 	"inventorywizard.message.slot_unlocked": "🔓 Slot unlocked",
-	"inventorywizard.message.singleplayer_only": "InventoryWizard only works in singleplayer worlds (or as the LAN host).",
+	"inventorywizard.message.singleplayer_only": "InventoryWizard only works in singleplayer worlds, as the LAN host, or on servers with the InventoryWizard plugin.",
 	"inventorywizard.button.sort_container": "Sort container",
 	"inventorywizard.button.sort_inventory": "Sort inventory",
 	"inventorywizard.button.cycle_mode": "Change sort mode",

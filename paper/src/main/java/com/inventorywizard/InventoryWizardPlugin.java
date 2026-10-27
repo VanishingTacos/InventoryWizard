@@ -1,8 +1,15 @@
 package com.inventorywizard;
 
 import org.bukkit.Sound;
+import org.bukkit.block.Container;
+import org.bukkit.block.DoubleChest;
 import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.entity.ChestBoat;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.minecart.StorageMinecart;
+import org.bukkit.event.inventory.InventoryType;
+import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public class InventoryWizardPlugin extends JavaPlugin {
@@ -33,7 +40,7 @@ public class InventoryWizardPlugin extends JavaPlugin {
         saveDefaultConfig();
         
         getLogger().info("InventoryWizard has awakened! ✨");
-        getLogger().info("Commands: /iwiz [hotbar|inventory|all]");
+        getLogger().info("Commands: /iwiz [hotbar|inventory|all|container|mode]");
         getLogger().info("Hotbar: Shift+Right-click in hotbar OR Double-click an empty hotbar slot");
         getLogger().info("Inventory: Shift+Right-click in main inventory");
         getLogger().info("Both: Shift+Right-click in hotbar (with all permission)");
@@ -76,6 +83,48 @@ public class InventoryWizardPlugin extends JavaPlugin {
                 config.getInt("hotbar-priorities.other", defaults.other()));
     }
     
+    /** Whether the inventory is a real container of a kind that's turned on and the player may sort. */
+    public boolean canSortContainer(Inventory inventory, Player player) {
+        if (!isRealContainer(inventory, player)) {
+            return false;
+        }
+        switch (inventory.getType()) {
+            case CHEST:
+                return isFeatureEnabled("chest-sorting") && player.hasPermission("inventorywizard.chest");
+            case SHULKER_BOX:
+                return isFeatureEnabled("shulker-sorting") && player.hasPermission("inventorywizard.shulker");
+            case BARREL:
+                return isFeatureEnabled("barrel-sorting") && player.hasPermission("inventorywizard.barrel");
+            case ENDER_CHEST:
+                return isFeatureEnabled("enderchest-sorting") && player.hasPermission("inventorywizard.enderchest");
+            default:
+                return false;
+        }
+    }
+
+    /**
+     * Whether the inventory belongs to an actual chest, barrel, shulker box, chest minecart/boat or the player's
+     * ender chest, as opposed to a menu another plugin built with Bukkit.createInventory.
+     */
+    private static boolean isRealContainer(Inventory inventory, Player player) {
+        if (inventory.getType() == InventoryType.ENDER_CHEST) {
+            return inventory.equals(player.getEnderChest()) || inventory.getHolder() == player;
+        }
+        InventoryHolder holder = inventory.getHolder();
+        return holder instanceof Container || holder instanceof DoubleChest
+                || holder instanceof StorageMinecart || holder instanceof ChestBoat;
+    }
+
+    public static String containerDisplayName(InventoryType type) {
+        switch (type) {
+            case CHEST: return "Chest";
+            case SHULKER_BOX: return "Shulker Box";
+            case BARREL: return "Barrel";
+            case ENDER_CHEST: return "Ender Chest";
+            default: return "Container";
+        }
+    }
+
     /**
      * Runs a sort unless the player is rate limited, then plays the sound and shows the message.
      * @return false if the player was rate limited

@@ -11,7 +11,7 @@ displayName = "InventoryWizard"
 displayURL = "https://github.com/VanishingTacos/InventoryWizard"
 logoFile = "assets/inventorywizard/icon.png"
 authors = "VanishingTacos"
-description = '''Magically sort chests, shulker boxes, barrels, ender chests, your inventory and hotbar with cycling sorting modes. Singleplayer (and LAN host) only.'''
+description = '''Magically sort chests, shulker boxes, barrels, ender chests, your inventory and hotbar with cycling sorting modes. Works in singleplayer, as the LAN host, and on servers with the InventoryWizard plugin.'''
 
 [[dependencies.inventorywizard]]
 modId = "forge"

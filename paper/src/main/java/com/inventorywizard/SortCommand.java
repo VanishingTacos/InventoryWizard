@@ -5,6 +5,7 @@ import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.Inventory;
 
 import java.util.Arrays;
 import java.util.List;
@@ -91,6 +92,22 @@ public class SortCommand implements CommandExecutor, TabCompleter {
                 }, -0.2f, "§b🧙✨ Complete inventory transformation complete! (" + allMode.getDisplayName() + ")");
                 break;
                 
+            case "container":
+                Inventory top = player.getOpenInventory().getTopInventory();
+                if (!plugin.canSortContainer(top, player)) {
+                    player.sendMessage("§c🧙✨ Open a chest, barrel, shulker box or ender chest you're allowed to sort first.");
+                    return true;
+                }
+                PlayerDataManager.SortMode containerMode = plugin.getPlayerDataManager().getPlayerSortMode(player);
+                String containerType = InventoryWizardPlugin.containerDisplayName(top.getType());
+                plugin.sort(player, () -> InventorySorter.sortInventory(top, containerMode, plugin.allowPartialStacksInChests()),
+                        0f, "§a✨ " + containerType + " magically sorted! (" + containerMode.getDisplayName() + ")");
+                break;
+
+            case "mode":
+                mode(player, args);
+                break;
+
             case "lock":
                 lock(player, args);
                 break;
@@ -162,8 +179,9 @@ public class SortCommand implements CommandExecutor, TabCompleter {
 
                 
             default:
-                player.sendMessage("§e🧙✨ InventoryWizard Usage: §f/iwiz [hotbar|inventory|all|lock]");
-                player.sendMessage("§7Cast your sorting spells with: hotbar, inventory, or all");
+                player.sendMessage("§e🧙✨ InventoryWizard Usage: §f/iwiz [hotbar|inventory|all|container|mode|lock]");
+                player.sendMessage("§7Cast your sorting spells with: hotbar, inventory, all, or container (the one you have open)");
+                player.sendMessage("§7Change the sorting mode with: mode [default|alphabetical|stack-based]");
                 player.sendMessage("§7Keep a slot in place with: lock [slot|list|clear]");
                 return true;
         }
@@ -173,6 +191,26 @@ public class SortCommand implements CommandExecutor, TabCompleter {
     
     private Set<Integer> lockedSlots(Player player) {
         return plugin.getPlayerDataManager().getLockedSlots(player);
+    }
+
+    /**
+     * {@code /iwiz mode} cycles the sort mode, {@code /iwiz mode <mode>} sets it. The client mod's mode button
+     * uses the second form, so its own mode and the server's stay the same.
+     */
+    private void mode(Player player, String[] args) {
+        PlayerDataManager preferences = plugin.getPlayerDataManager();
+        PlayerDataManager.SortMode mode;
+        if (args.length > 1) {
+            mode = PlayerDataManager.SortMode.fromName(args[1]);
+            if (mode == null) {
+                player.sendMessage("§c🧙✨ Usage: §f/iwiz mode [default|alphabetical|stack-based]");
+                return;
+            }
+            preferences.setPlayerSortMode(player, mode);
+        } else {
+            mode = preferences.cyclePlayerSortMode(player);
+        }
+        plugin.feedback(player, 0.4f, "§e🔄 Sorting mode changed to: §6" + mode.getDisplayName());
     }
 
     /**
@@ -220,11 +258,12 @@ public class SortCommand implements CommandExecutor, TabCompleter {
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         if (args.length == 1) {
-            List<String> options = Arrays.asList("hotbar", "inventory", "all", "lock");
-            
+            List<String> options = Arrays.asList("hotbar", "inventory", "all", "container", "mode", "lock");
+
             // Add admin commands for admins
             if (sender.hasPermission("inventorywizard.admin")) {
-                options = Arrays.asList("hotbar", "inventory", "all", "lock", "regen-credentials", "rate-limit", "reset-rate-limit", "rate-limit-enabled");
+                options = Arrays.asList("hotbar", "inventory", "all", "container", "mode", "lock",
+                        "regen-credentials", "rate-limit", "reset-rate-limit", "rate-limit-enabled");
             }
             
             return options.stream()
@@ -232,6 +271,12 @@ public class SortCommand implements CommandExecutor, TabCompleter {
                     .collect(Collectors.toList());
         }
         
+        if (args.length == 2 && args[0].equalsIgnoreCase("mode")) {
+            return Arrays.asList("default", "alphabetical", "stack-based").stream()
+                    .filter(s -> s.startsWith(args[1].toLowerCase()))
+                    .collect(Collectors.toList());
+        }
+
         if (args.length == 2 && args[0].equalsIgnoreCase("lock")) {
             return Arrays.asList("list", "clear").stream()
                     .filter(s -> s.startsWith(args[1].toLowerCase()))

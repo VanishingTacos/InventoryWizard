@@ -37,7 +37,7 @@ Need help, found a bug or have an idea? Join the Discord!
 2. Drop it into `.minecraft/mods` (or `plugins` for Paper/Spigot)
 3. Press **`R`** or **Shift+Right Click** in any inventory to sort, or click the **sort button** next to the inventory or chest title
 
-Supports Minecraft 1.21 through 26.3 (Java 21+, or Java 25+ on 26.x). The client mod only sorts in singleplayer and LAN worlds you host; use the Paper plugin for servers.
+Supports Minecraft 1.21 through 26.3 (Java 21+, or Java 25+ on 26.x). The client mod sorts in singleplayer and LAN worlds you host. On a server, use the Paper plugin: with the client mod installed too, the sort buttons, the sort key and `/iwiz` send their sorts to the plugin.
 
 ## 📖 Documentation
 Everything else lives in the **[Wiki](https://github.com/VanishingTacos/InventoryWizard/wiki)**:

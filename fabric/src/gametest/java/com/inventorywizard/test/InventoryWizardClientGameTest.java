@@ -3,10 +3,12 @@ package com.inventorywizard.test;
 import com.inventorywizard.InventoryWizard;
 import com.inventorywizard.InventoryWizardConfig;
 import com.inventorywizard.InventoryWizardConfigScreen;
+import com.inventorywizard.SortActions;
 import com.inventorywizard.SortMode;
 import com.inventorywizard.mixin.AbstractContainerScreenAccessor;
 import com.inventorywizard.test.mixin.ScreenPositionAccessor;
 import com.mojang.blaze3d.platform.InputConstants;
+import com.mojang.brigadier.arguments.StringArgumentType;
 import net.fabricmc.fabric.api.client.gametest.v1.FabricClientGameTest;
 import net.fabricmc.fabric.api.client.gametest.v1.context.ClientGameTestContext;
 import net.fabricmc.fabric.api.client.gametest.v1.context.TestDedicatedServerContext;
@@ -29,6 +31,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
+import net.minecraft.commands.Commands;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -49,12 +52,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Predicate;
 
 /**
  * Drives the real game: creates a singleplayer world, sorts with simulated
  * Shift+Right-clicks and the sort key, and checks the server-side result.
- * Then joins a dedicated server to check the mod stays inactive there.
+ * Then joins a dedicated server to check the mod stays inactive there, and sends
+ * its sorts to the server once it has the InventoryWizard plugin's command.
  */
 @SuppressWarnings("UnstableApiUsage")
 public class InventoryWizardClientGameTest implements FabricClientGameTest {
@@ -495,8 +500,53 @@ public class InventoryWizardClientGameTest implements FabricClientGameTest {
                 assertEquals("shift+right-click passes through to the server", "-", inventoryRange(server, 20, 21).getFirst());
                 assertEquals("stone quick-moved to the hotbar", true, inventoryRange(server, 0, 9).contains("stone x10"));
                 closeScreen(context);
+
+                testPluginServer(context, server);
             }
         }
+    }
+
+    /**
+     * Stands in for the Paper plugin with a command of the same name that records what it's sent,
+     * since a Paper server can't run in this test. The plugin's side is covered by :paper:runPaperTest.
+     */
+    private static void testPluginServer(ClientGameTestContext context, TestDedicatedServerContext server) {
+        List<String> received = new CopyOnWriteArrayList<>();
+        server.runOnServer(s -> {
+            s.getCommands().getDispatcher().register(Commands.literal("inventorywizard:iwiz")
+                    .then(Commands.argument("args", StringArgumentType.greedyString()).executes(c -> {
+                        received.add(StringArgumentType.getString(c, "args"));
+                        return 1;
+                    })));
+            s.getCommands().sendCommands(player(s));
+        });
+        context.waitTicks(5);
+        boolean detected = context.computeOnClient(SortActions::hasPlugin);
+        assertEquals("plugin detected from the server's command list", true, detected);
+
+        openInventory(context);
+        context.takeScreenshot("inventorywizard-plugin-server-buttons");
+        assertEquals("sort button shown on a server with the plugin", true, hasWidget(context, SORT_INVENTORY_BUTTON));
+        clickWidget(context, SORT_INVENTORY_BUTTON);
+        context.waitTicks(SORT_WAIT_TICKS);
+        clickWidget(context, MODE_BUTTON);
+        context.waitTicks(SORT_WAIT_TICKS);
+        SortMode mode = context.computeOnClient(client -> InventoryWizard.config().sortMode);
+        assertEquals("mode after clicking the mode button on a plugin server", SortMode.ALPHABETICAL, mode);
+        closeScreen(context);
+
+        server.runOnServer(s -> player(s).openMenu(new SimpleMenuProvider(
+                (id, inventory, p) -> ChestMenu.threeRows(id, inventory), Component.literal("Chest"))));
+        context.waitForScreen(ContainerScreen.class);
+        clickWidget(context, SORT_CONTAINER_BUTTON);
+        context.waitTicks(SORT_WAIT_TICKS);
+        closeScreen(context);
+
+        context.getInput().pressKey(SORT_KEY);
+        context.waitTicks(SORT_WAIT_TICKS);
+
+        assertEquals("commands sent to the plugin", List.of("inventory", "mode alphabetical", "container", "all"), List.copyOf(received));
+        context.runOnClient(client -> InventoryWizard.config().sortMode = SortMode.DEFAULT);
     }
 
     // ---- input helpers -------------------------------------------------------

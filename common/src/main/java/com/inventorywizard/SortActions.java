@@ -1,6 +1,7 @@
 package com.inventorywizard;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ClientPacketListener;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.client.server.IntegratedServer;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -33,6 +34,7 @@ import net.minecraft.world.level.block.entity.ShulkerBoxBlockEntity;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
@@ -40,9 +42,17 @@ import java.util.function.Function;
 /**
  * Runs sorts on the integrated (singleplayer or LAN-host) server and reports back
  * on the client. Changes are synced to the open screen by broadcastChanges(), so no
- * custom networking is needed. On a remote server there is nothing to run on.
+ * custom networking is needed. On a remote server running the InventoryWizard Paper
+ * plugin, sorts are sent as its commands instead; on any other remote server there is
+ * nothing to run on.
  */
 public final class SortActions {
+
+    /**
+     * The Paper plugin's command, namespaced by Bukkit. The plain /iwiz is also this mod's client command,
+     * which the loaders would run here instead of sending it, so remote sorts must use this one.
+     */
+    private static final String PLUGIN_COMMAND = "inventorywizard:iwiz";
 
     private static final int HOTBAR_START = 0;
     private static final int INVENTORY_START = 9;
@@ -139,6 +149,9 @@ public final class SortActions {
     }
 
     public static void sortPlayer(Minecraft client, PlayerTarget target) {
+        if (sendToPlugin(client, target.name().toLowerCase(Locale.ROOT))) {
+            return;
+        }
         InventoryWizardConfig config = InventoryWizard.config();
         SortMode mode = config.sortMode;
         // Copied here: the sort runs on the server thread while the client may toggle locks
@@ -167,6 +180,10 @@ public final class SortActions {
     }
 
     private static void sortContainer(Minecraft client, int containerId, int slotIndex) {
+        // The plugin sorts whichever container is open, which is the only one a slot here can belong to
+        if (sendToPlugin(client, "container")) {
+            return;
+        }
         InventoryWizardConfig config = InventoryWizard.config();
         SortMode mode = config.sortMode;
 
@@ -214,6 +231,10 @@ public final class SortActions {
         InventoryWizardConfig config = InventoryWizard.config();
         config.sortMode = config.sortMode.next();
         config.save();
+        // Set rather than cycled on the plugin, so both end up on the mode shown here; the plugin confirms it
+        if (sendToPlugin(client, "mode " + config.sortMode.name().toLowerCase(Locale.ROOT))) {
+            return;
+        }
         show(client, new Feedback(Component.translatable("inventorywizard.message.mode_changed", config.sortMode.displayName()), 0.4f));
     }
 
@@ -250,6 +271,30 @@ public final class SortActions {
             return ContainerKind.CHEST;
         }
         return null;
+    }
+
+    /** Whether sorting can run here: in singleplayer, as the LAN host, or on a server with the InventoryWizard plugin. */
+    public static boolean canSort(Minecraft client) {
+        return client.getSingleplayerServer() != null || hasPlugin(client);
+    }
+
+    /**
+     * Whether this is a remote server that runs the InventoryWizard Paper plugin. Servers only send the
+     * commands a player may use, so this also means the player has the plugin's inventorywizard.use permission.
+     */
+    public static boolean hasPlugin(Minecraft client) {
+        ClientPacketListener connection = client.getConnection();
+        return client.getSingleplayerServer() == null && connection != null
+                && connection.getCommands().getRoot().getChild(PLUGIN_COMMAND) != null;
+    }
+
+    /** Sends {@code /inventorywizard:iwiz <args>} if the server has the plugin; the plugin sends its own feedback. */
+    private static boolean sendToPlugin(Minecraft client, String args) {
+        if (!hasPlugin(client)) {
+            return false;
+        }
+        client.getConnection().sendCommand(PLUGIN_COMMAND + " " + args);
+        return true;
     }
 
     private static void runOnServer(Minecraft client, Function<ServerPlayer, Feedback> action) {
