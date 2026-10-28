@@ -1,5 +1,6 @@
 package com.inventorywizard;
 
+import org.bstats.bukkit.Metrics;
 import org.bukkit.Sound;
 import org.bukkit.block.Container;
 import org.bukkit.block.DoubleChest;
@@ -13,6 +14,8 @@ import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public class InventoryWizardPlugin extends JavaPlugin {
+    
+    private static final int BSTATS_PLUGIN_ID = 34984;
     
     private PlayerDataManager playerDataManager;
     private RateLimiter rateLimiter;
@@ -38,6 +41,9 @@ public class InventoryWizardPlugin extends JavaPlugin {
         
         // Save default config
         saveDefaultConfig();
+        
+        // Anonymous usage stats on bstats.org; server owners can opt out in plugins/bStats/config.yml
+        new Metrics(this, BSTATS_PLUGIN_ID);
         
         getLogger().info("InventoryWizard has awakened! ✨");
         getLogger().info("Commands: /iwiz [hotbar|inventory|all|container|mode]");

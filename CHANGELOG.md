@@ -17,6 +17,7 @@ Add changes under **Unreleased** as you make them. When you bump the version, re
 - **Settings:** a live **sort preview** under Sorting Mode that sorts sample items with your settings and animates them into place when you change modes. From Minecraft 26.1 it appears once you're in a world, since items aren't available on the title screen.
 - **Settings:** a sound pitch slider and a **Preview Sound** button.
 - **Settings:** **Reset to Defaults** (with a confirmation; locked slots are kept), **Unlock All Slots**, and a shortcut to the key binds.
+- **Paper:** anonymous usage statistics through [bStats](https://bstats.org/plugin/bukkit/InventoryWizard/34984). Server owners can opt out by setting `enabled: false` in `plugins/bStats/config.yml`.
 
 ## [2.3.1] - 2026-10-27
 
