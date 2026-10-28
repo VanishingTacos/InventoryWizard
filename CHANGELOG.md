@@ -6,7 +6,7 @@ All notable changes to InventoryWizard. The release workflow copies the section 
 Add changes under **Unreleased** as you make them. When you bump the version, rename that heading to
 `## [x.y.z] - YYYY-MM-DD` and start a new empty **Unreleased** section above it.
 
-## Unreleased
+## [2.3.2] - 2026-10-27
 
 ### Changed
 - Redesigned settings screen: options are grouped into Sorting, Feedback, Sorting Enabled For, Sort Partial Stacks In and Other sections on every Minecraft version, and each sort mode explains itself in its tooltip.
