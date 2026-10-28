@@ -10,7 +10,7 @@ import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 //? if >=26.4 {
-/*import net.minecraft.client.renderer.pipeline.RenderPipelines;
+/*import net.minecraft.client.gui.GuiPipeline;
 *///?} else if >=1.21.6 {
 import net.minecraft.client.renderer.RenderPipelines;
 //?} else if >=1.21.2 {
@@ -54,7 +54,9 @@ public abstract class AbstractContainerScreenMixin {
         // Slot coordinates are relative to the screen, which vanilla has already translated to
         int x = slot.x - 1;
         int y = slot.y - 1;
-        //? if >=1.21.6 {
+        //? if >=26.4 {
+        /*graphics.blitSprite(GuiPipeline.TEXTURED, inventorywizard$LOCK_SPRITE, x, y, inventorywizard$LOCK_SIZE, inventorywizard$LOCK_SIZE);
+        *///?} else if >=1.21.6 {
         graphics.blitSprite(RenderPipelines.GUI_TEXTURED, inventorywizard$LOCK_SPRITE, x, y, inventorywizard$LOCK_SIZE, inventorywizard$LOCK_SIZE);
         //?} else if >=1.21.2 {
         /*// Before 1.21.6 the GUI is depth sorted: lift the lock above the item and its count, below the carried item
