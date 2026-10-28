@@ -26,7 +26,10 @@ public abstract class AbstractWidgetMixin implements WidgetIcon {
         inventorywizard$icon = icon;
     }
 
-    //? if >=26.1 {
+    //? if >=26.4 {
+    /*@Inject(method = "extractRenderState", at = @At("RETURN"))
+    private void inventorywizard$drawIcon(GuiGraphicsExtractor graphics, CallbackInfo ci) {
+    *///?} else if >=26.1 {
     @Inject(method = "extractRenderState", at = @At("RETURN"))
     private void inventorywizard$drawIcon(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick, CallbackInfo ci) {
     //?} else {
@@ -34,7 +37,12 @@ public abstract class AbstractWidgetMixin implements WidgetIcon {
     private void inventorywizard$drawIcon(GuiGraphics graphics, int mouseX, int mouseY, float partialTick, CallbackInfo ci) {
     *///?}
         AbstractWidget widget = (AbstractWidget) (Object) this;
-        if (inventorywizard$icon != null && widget.visible) {
+        // visible became protected in 26.4
+        //? if >=26.4 {
+        /*boolean visible = widget.isVisible();
+        *///?} else
+        boolean visible = widget.visible;
+        if (inventorywizard$icon != null && visible) {
             WidgetIcon.draw(widget, inventorywizard$icon, new MagicCanvas(graphics));
         }
     }
