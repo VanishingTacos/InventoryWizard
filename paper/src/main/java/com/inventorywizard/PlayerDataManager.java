@@ -47,6 +47,17 @@ public class PlayerDataManager {
             return DEFAULT;
         }
         
+        /** Parses a mode name like {@code alphabetical}, {@code stack-based} or {@code stack_based}; null if unknown. */
+        public static SortMode fromName(String name) {
+            String normalized = name.trim().replace('-', '_').toUpperCase(java.util.Locale.ROOT);
+            for (SortMode mode : values()) {
+                if (mode.name().equals(normalized)) {
+                    return mode;
+                }
+            }
+            return null;
+        }
+
         public SortMode next() {
             int nextId = (this.id + 1) % values().length;
             return fromId(nextId);

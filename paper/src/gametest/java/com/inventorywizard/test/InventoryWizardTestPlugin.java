@@ -89,6 +89,9 @@ public class InventoryWizardTestPlugin extends JavaPlugin implements Listener {
             return command != null && command.getPlugin() == wizard
                     && command.getAliases().containsAll(List.of("inventorywizard", "sort"));
         });
+        // The client mod looks for this name in the command list to show its buttons, then sends sorts with it
+        test("namespaced inventorywizard:iwiz registered for the client mod",
+                () -> Bukkit.getPluginCommand("inventorywizard:iwiz") == Bukkit.getPluginCommand("iwiz"));
         test("permissions registered", () -> Bukkit.getPluginManager().getPermission("inventorywizard.use") != null
                 && Bukkit.getPluginManager().getPermission("inventorywizard.admin") != null);
         test("console /iwiz is rejected without errors", () -> Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "iwiz"));
@@ -118,6 +121,12 @@ public class InventoryWizardTestPlugin extends JavaPlugin implements Listener {
         test("sort modes cycle", () -> SortMode.DEFAULT.next() == SortMode.ALPHABETICAL
                 && SortMode.ALPHABETICAL.next() == SortMode.STACK_BASED
                 && SortMode.STACK_BASED.next() == SortMode.DEFAULT);
+        // The client mod's mode button sends its enum names, e.g. "stack_based"
+        test("sort modes parse by name", () -> SortMode.fromName("alphabetical") == SortMode.ALPHABETICAL
+                && SortMode.fromName("stack_based") == SortMode.STACK_BASED
+                && SortMode.fromName("Stack-Based") == SortMode.STACK_BASED
+                && SortMode.fromName("default") == SortMode.DEFAULT
+                && SortMode.fromName("bogus") == null);
 
         World world = Bukkit.getWorlds().getFirst();
         Map<String, Supplier<Inventory>> containers = new LinkedHashMap<>();

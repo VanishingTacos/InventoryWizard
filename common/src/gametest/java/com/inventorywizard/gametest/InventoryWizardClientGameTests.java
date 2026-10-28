@@ -8,6 +8,7 @@ import com.mojang.blaze3d.platform.InputConstants;
 //? if <1.21.9
 //import net.minecraft.client.KeyMapping;
 import net.minecraft.client.gui.components.AbstractWidget;
+import net.minecraft.client.gui.screens.ConfirmScreen;
 import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.gui.screens.inventory.ContainerScreen;
@@ -103,6 +104,17 @@ final class InventoryWizardClientGameTests {
         context.waitForScreen(TitleScreen.class);
         boolean reloaded = context.computeOnClient(client -> InventoryWizardConfig.load().showMessages);
         assertEquals("show messages saved when the screen closes", false, reloaded);
+
+        context.setScreen(() -> new InventoryWizardConfigScreen(new TitleScreen()));
+        context.waitForScreen(InventoryWizardConfigScreen.class);
+        context.clickWidget("Reset to Defaults");
+        context.waitForScreen(ConfirmScreen.class);
+        context.clickWidget(Component.translatable("gui.yes").getString());
+        context.waitForScreen(InventoryWizardConfigScreen.class);
+        boolean reset = context.computeOnClient(client -> InventoryWizardConfig.load().showMessages);
+        assertEquals("show messages saved as the default after resetting", true, reset);
+        context.clickWidget(Component.translatable("gui.done").getString());
+        context.waitForScreen(TitleScreen.class);
 
         context.runOnClient(client -> {
             InventoryWizard.config().showMessages = true;

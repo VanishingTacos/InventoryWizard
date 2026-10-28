@@ -46,8 +46,8 @@ public final class SortButtons {
     /** Adds the buttons once the screen has finished init, which every loader reports after vanilla's own widgets. */
     public static void add(Minecraft client, AbstractContainerScreen<?> screen) {
         BUTTONS.remove(screen);
-        // The client mod can only sort where it runs the server, so a button would do nothing on a remote one
-        if (!InventoryWizard.config().showButtons || client.getSingleplayerServer() == null) {
+        // A button would do nothing on a remote server without the InventoryWizard plugin
+        if (!InventoryWizard.config().showButtons || !SortActions.canSort(client)) {
             return;
         }
         boolean container = screen instanceof ContainerScreen || screen instanceof ShulkerBoxScreen;

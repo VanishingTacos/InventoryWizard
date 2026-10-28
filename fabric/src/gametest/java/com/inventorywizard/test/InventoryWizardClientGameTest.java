@@ -3,10 +3,12 @@ package com.inventorywizard.test;
 import com.inventorywizard.InventoryWizard;
 import com.inventorywizard.InventoryWizardConfig;
 import com.inventorywizard.InventoryWizardConfigScreen;
+import com.inventorywizard.SortActions;
 import com.inventorywizard.SortMode;
 import com.inventorywizard.mixin.AbstractContainerScreenAccessor;
 import com.inventorywizard.test.mixin.ScreenPositionAccessor;
 import com.mojang.blaze3d.platform.InputConstants;
+import com.mojang.brigadier.arguments.StringArgumentType;
 import net.fabricmc.fabric.api.client.gametest.v1.FabricClientGameTest;
 import net.fabricmc.fabric.api.client.gametest.v1.context.ClientGameTestContext;
 import net.fabricmc.fabric.api.client.gametest.v1.context.TestDedicatedServerContext;
@@ -17,6 +19,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.events.ContainerEventHandler;
 import net.minecraft.client.gui.components.events.GuiEventListener;
+import net.minecraft.client.gui.screens.ConfirmScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
@@ -29,6 +32,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
+import net.minecraft.commands.Commands;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -49,12 +53,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Predicate;
 
 /**
  * Drives the real game: creates a singleplayer world, sorts with simulated
  * Shift+Right-clicks and the sort key, and checks the server-side result.
- * Then joins a dedicated server to check the mod stays inactive there.
+ * Then joins a dedicated server to check the mod stays inactive there, and sends
+ * its sorts to the server once it has the InventoryWizard plugin's command.
  */
 @SuppressWarnings("UnstableApiUsage")
 public class InventoryWizardClientGameTest implements FabricClientGameTest {
@@ -97,6 +103,7 @@ public class InventoryWizardClientGameTest implements FabricClientGameTest {
             context.waitTicks(5);
             pace(context);
 
+            testConfigScreenInWorld(context);
             testInventoryShiftRightClick(context, server);
             testSortKeyOnHotbar(context, server);
             testCycleModeSlot(context, server);
@@ -135,10 +142,46 @@ public class InventoryWizardClientGameTest implements FabricClientGameTest {
         boolean reloaded = context.computeOnClient(client -> InventoryWizardConfig.load().showMessages);
         assertEquals("show messages saved when the screen closes", false, reloaded);
 
+        context.setScreen(() -> new InventoryWizardConfigScreen(new TitleScreen()));
+        context.waitForScreen(InventoryWizardConfigScreen.class);
+        clickWidget(context, "Reset to Defaults");
+        context.waitForScreen(ConfirmScreen.class);
+        context.clickScreenButton("gui.yes");
+        context.waitForScreen(InventoryWizardConfigScreen.class);
+        boolean reset = context.computeOnClient(client -> InventoryWizardConfig.load().showMessages);
+        assertEquals("show messages saved as the default after resetting", true, reset);
+        context.clickScreenButton("gui.done");
+        context.waitForScreen(TitleScreen.class);
+
         context.runOnClient(client -> {
             InventoryWizard.config().showMessages = true;
             InventoryWizard.config().save();
         });
+    }
+
+    /** In a world, where items can be drawn on every version: the item icons and the sort preview. */
+    private static void testConfigScreenInWorld(ClientGameTestContext context) {
+        context.setScreen(() -> new InventoryWizardConfigScreen(null));
+        context.waitForScreen(InventoryWizardConfigScreen.class);
+        context.takeScreenshot("inventorywizard-config-screen-world");
+
+        // The rest of the list
+        context.getInput().setCursorPos(context.computeOnClient(client -> client.getWindow().getScreenWidth() / 2.0),
+                context.computeOnClient(client -> client.getWindow().getScreenHeight() / 2.0));
+        context.getInput().scroll(-30);
+        context.waitTicks(2);
+        context.takeScreenshot("inventorywizard-config-screen-bottom");
+        context.getInput().scroll(30);
+        context.waitTicks(2);
+
+        // The preview mid-slide, then back to the default mode for the tests that follow
+        clickWidget(context, "Sorting Mode");
+        context.takeScreenshot("inventorywizard-config-screen-mode");
+        assertEquals("sort mode after clicking its button", SortMode.ALPHABETICAL,
+                context.computeOnClient(client -> InventoryWizard.config().sortMode));
+        context.runOnClient(client -> InventoryWizard.config().sortMode = SortMode.DEFAULT);
+        context.setScreen(() -> null);
+        context.waitTicks(2);
     }
 
     // ---- singleplayer tests -------------------------------------------------
@@ -495,8 +538,53 @@ public class InventoryWizardClientGameTest implements FabricClientGameTest {
                 assertEquals("shift+right-click passes through to the server", "-", inventoryRange(server, 20, 21).getFirst());
                 assertEquals("stone quick-moved to the hotbar", true, inventoryRange(server, 0, 9).contains("stone x10"));
                 closeScreen(context);
+
+                testPluginServer(context, server);
             }
         }
+    }
+
+    /**
+     * Stands in for the Paper plugin with a command of the same name that records what it's sent,
+     * since a Paper server can't run in this test. The plugin's side is covered by :paper:runPaperTest.
+     */
+    private static void testPluginServer(ClientGameTestContext context, TestDedicatedServerContext server) {
+        List<String> received = new CopyOnWriteArrayList<>();
+        server.runOnServer(s -> {
+            s.getCommands().getDispatcher().register(Commands.literal("inventorywizard:iwiz")
+                    .then(Commands.argument("args", StringArgumentType.greedyString()).executes(c -> {
+                        received.add(StringArgumentType.getString(c, "args"));
+                        return 1;
+                    })));
+            s.getCommands().sendCommands(player(s));
+        });
+        context.waitTicks(5);
+        boolean detected = context.computeOnClient(SortActions::hasPlugin);
+        assertEquals("plugin detected from the server's command list", true, detected);
+
+        openInventory(context);
+        context.takeScreenshot("inventorywizard-plugin-server-buttons");
+        assertEquals("sort button shown on a server with the plugin", true, hasWidget(context, SORT_INVENTORY_BUTTON));
+        clickWidget(context, SORT_INVENTORY_BUTTON);
+        context.waitTicks(SORT_WAIT_TICKS);
+        clickWidget(context, MODE_BUTTON);
+        context.waitTicks(SORT_WAIT_TICKS);
+        SortMode mode = context.computeOnClient(client -> InventoryWizard.config().sortMode);
+        assertEquals("mode after clicking the mode button on a plugin server", SortMode.ALPHABETICAL, mode);
+        closeScreen(context);
+
+        server.runOnServer(s -> player(s).openMenu(new SimpleMenuProvider(
+                (id, inventory, p) -> ChestMenu.threeRows(id, inventory), Component.literal("Chest"))));
+        context.waitForScreen(ContainerScreen.class);
+        clickWidget(context, SORT_CONTAINER_BUTTON);
+        context.waitTicks(SORT_WAIT_TICKS);
+        closeScreen(context);
+
+        context.getInput().pressKey(SORT_KEY);
+        context.waitTicks(SORT_WAIT_TICKS);
+
+        assertEquals("commands sent to the plugin", List.of("inventory", "mode alphabetical", "container", "all"), List.copyOf(received));
+        context.runOnClient(client -> InventoryWizard.config().sortMode = SortMode.DEFAULT);
     }
 
     // ---- input helpers -------------------------------------------------------

@@ -56,6 +56,19 @@ public final class InventoryWizard {
         return config;
     }
 
+    /**
+     * Puts the settings back to their defaults and saves them. Locked slots and the JSON-only
+     * values (sound id, hotbar priorities) aren't on the settings screen, so they're kept.
+     */
+    public static void resetConfig() {
+        InventoryWizardConfig defaults = new InventoryWizardConfig();
+        defaults.lockedSlots = config.lockedSlots;
+        defaults.sound.id = config.sound.id;
+        defaults.hotbarPriorities = config.hotbarPriorities;
+        config = defaults;
+        config.save();
+    }
+
     public static void init() {
         config = InventoryWizardConfig.load();
         if (config.checkForUpdates) {

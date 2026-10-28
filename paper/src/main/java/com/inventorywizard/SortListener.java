@@ -1,10 +1,6 @@
 package com.inventorywizard;
 
-import org.bukkit.block.Container;
-import org.bukkit.block.DoubleChest;
-import org.bukkit.entity.ChestBoat;
 import org.bukkit.entity.Player;
-import org.bukkit.entity.minecart.StorageMinecart;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.ClickType;
@@ -13,7 +9,6 @@ import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.Inventory;
-import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 
 import java.util.Set;
@@ -52,10 +47,10 @@ public class SortListener implements Listener {
 
             if (hotbarSlot) {
                 onHotbarShiftRightClick(event, player);
-            } else if (canSortContainer(clickedInventory, player)) {
+            } else if (plugin.canSortContainer(clickedInventory, player)) {
                 event.setCancelled(true);
                 PlayerDataManager.SortMode mode = preferences.getPlayerSortMode(player);
-                String containerType = getContainerDisplayName(clickedInventory.getType());
+                String containerType = InventoryWizardPlugin.containerDisplayName(clickedInventory.getType());
                 plugin.sortNextTick(player, () -> InventorySorter.sortInventory(clickedInventory, mode, plugin.allowPartialStacksInChests()),
                         0f, "§a✨ " + containerType + " magically sorted! (" + mode.getDisplayName() + ")");
             } else if (playerInventory && event.getSlot() > 8 && event.getSlot() < 36
@@ -135,46 +130,5 @@ public class SortListener implements Listener {
 
     private static boolean isEmpty(ItemStack item) {
         return item == null || item.getType().isAir();
-    }
-
-    private boolean canSortContainer(Inventory inventory, Player player) {
-        if (!isRealContainer(inventory, player)) {
-            return false;
-        }
-        switch (inventory.getType()) {
-            case CHEST:
-                return plugin.isFeatureEnabled("chest-sorting") && player.hasPermission("inventorywizard.chest");
-            case SHULKER_BOX:
-                return plugin.isFeatureEnabled("shulker-sorting") && player.hasPermission("inventorywizard.shulker");
-            case BARREL:
-                return plugin.isFeatureEnabled("barrel-sorting") && player.hasPermission("inventorywizard.barrel");
-            case ENDER_CHEST:
-                return plugin.isFeatureEnabled("enderchest-sorting") && player.hasPermission("inventorywizard.enderchest");
-            default:
-                return false;
-        }
-    }
-
-    /**
-     * Whether the inventory belongs to an actual chest, barrel, shulker box, chest minecart/boat or the player's
-     * ender chest, as opposed to a menu another plugin built with Bukkit.createInventory.
-     */
-    private static boolean isRealContainer(Inventory inventory, Player player) {
-        if (inventory.getType() == InventoryType.ENDER_CHEST) {
-            return inventory.equals(player.getEnderChest()) || inventory.getHolder() == player;
-        }
-        InventoryHolder holder = inventory.getHolder();
-        return holder instanceof Container || holder instanceof DoubleChest
-                || holder instanceof StorageMinecart || holder instanceof ChestBoat;
-    }
-
-    private String getContainerDisplayName(InventoryType type) {
-        switch (type) {
-            case CHEST: return "Chest";
-            case SHULKER_BOX: return "Shulker Box";
-            case BARREL: return "Barrel";
-            case ENDER_CHEST: return "Ender Chest";
-            default: return "Container";
-        }
     }
 }
