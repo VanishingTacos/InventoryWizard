@@ -6,7 +6,7 @@ All notable changes to InventoryWizard. The release workflow copies the section 
 Add changes under **Unreleased** as you make them. When you bump the version, rename that heading to
 `## [x.y.z] - YYYY-MM-DD` and start a new empty **Unreleased** section above it.
 
-## [Unreleased]
+## [2.3.3] - 2026-10-29
 
 ### Added
 - **Usage stats (opt-in):** the client mod asks once, on the title screen, whether to share usage stats: a random install ID plus your InventoryWizard, Minecraft, loader, Java and OS versions, sent once per game start. Nothing is sent unless you agree. Change it any time with the new **Usage Stats** setting; turning it off deletes your data from the server. Details in [PRIVACY.md](PRIVACY.md), which now also covers your rights and how to contact me.
