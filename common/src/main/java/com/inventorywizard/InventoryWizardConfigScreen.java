@@ -149,11 +149,8 @@ public class InventoryWizardConfigScreen extends OptionsSubScreen {
         AbstractWidget checkForUpdates = bool("check_for_updates", config.checkForUpdates, v -> config.checkForUpdates = v)
                 .createButton(options);
         WidgetIcon.set(checkForUpdates, Items.CLOCK);
-        // Choosing here counts as having seen the notice, so turning it on starts sending from the next game start
-        AbstractWidget usageStats = bool("usage_stats", config.usageStats, v -> {
-            config.usageStats = v;
-            config.usageStatsNoticeShown = true;
-        }).createButton(options);
+        // Choosing here also answers the first-launch question; turning it off deletes the data on the server
+        AbstractWidget usageStats = bool("usage_stats", config.usageStats, UsageStats::setChoice).createButton(options);
         WidgetIcon.set(usageStats, Items.SPYGLASS);
         list.addSmall(checkForUpdates, usageStats);
         Button keyBinds = Button.builder(Component.translatable("controls.keybinds"),

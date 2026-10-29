@@ -9,7 +9,7 @@ Add changes under **Unreleased** as you make them. When you bump the version, re
 ## [Unreleased]
 
 ### Added
-- **Usage stats:** the client mod now sends anonymous usage stats once per game start: a random install ID plus your InventoryWizard, Minecraft, loader, Java and OS versions. Nothing is sent until a one-time chat message has told you about it, and you can turn it off with the new **Usage Stats** setting. Details in [PRIVACY.md](PRIVACY.md).
+- **Usage stats (opt-in):** the client mod asks once, on the title screen, whether to share usage stats: a random install ID plus your InventoryWizard, Minecraft, loader, Java and OS versions, sent once per game start. Nothing is sent unless you agree. Change it any time with the new **Usage Stats** setting; turning it off deletes your data from the server. Details in [PRIVACY.md](PRIVACY.md), which now also covers your rights and how to contact me.
 
 ## [2.3.2] - 2026-10-27
 

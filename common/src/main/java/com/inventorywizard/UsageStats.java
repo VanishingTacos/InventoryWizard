@@ -2,8 +2,10 @@ package com.inventorywizard;
 
 import com.google.gson.JsonObject;
 import com.inventorywizard.platform.Platform;
-import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.ConfirmScreen;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.network.chat.Component;
 
 import java.net.URI;
@@ -13,18 +15,21 @@ import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.Locale;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
 /**
- * Anonymous usage stats: at game start, one small JSON message to api.vanishingtacos.com with a random
- * install id and the mod, Minecraft, loader, Java and OS versions (see PRIVACY.md). Nothing is sent
- * until the one-time chat notice has been shown, while the Usage Stats setting is off, or in dev runs
- * ({@code -Dinventorywizard.usageStats=false}). Failures are ignored; the game never waits on it.
+ * Pseudonymous usage stats, only with the player's consent: at game start, one small JSON message to
+ * api.vanishingtacos.com with a random install id and the mod, Minecraft, loader, Java and OS versions
+ * (see PRIVACY.md). The player is asked once, on the title screen; nothing is sent until they choose to
+ * share. Turning it off asks the server to delete this install's data. Dev runs never ask or send
+ * ({@code -Dinventorywizard.usageStats=false}). Failures are logged and otherwise ignored.
  */
 public final class UsageStats {
 
     private static final URI ENDPOINT = URI.create(System.getProperty(
             "inventorywizard.usageStats.url", "https://api.vanishingtacos.com/v1/inventorywizard/heartbeat"));
-    private static final URI PRIVACY_URL = URI.create("https://github.com/VanishingTacos/InventoryWizard/blob/main/PRIVACY.md");
+
+    private static boolean askOnNextTick;
 
     private UsageStats() {}
 
@@ -33,9 +38,18 @@ public final class UsageStats {
         return "false".equalsIgnoreCase(System.getProperty("inventorywizard.usageStats"));
     }
 
+    /** At game start: send stats if the player agreed, or finish deleting them if they withdrew. */
     public static void start() {
         InventoryWizardConfig config = InventoryWizard.config();
-        if (disabledForRun() || !config.usageStats || !config.usageStatsNoticeShown) {
+        if (disabledForRun()) {
+            return;
+        }
+        if (!config.usageStats) {
+            // A delete that failed last time (offline, server down) is retried until it goes through
+            forget();
+            return;
+        }
+        if (!config.usageStatsAsked) {
             return;
         }
         if (!isInstallId(config.installId)) {
@@ -52,42 +66,109 @@ public final class UsageStats {
         body.addProperty("javaVersion", String.valueOf(Runtime.version().feature()));
         body.addProperty("os", osName());
 
-        HttpRequest request = HttpRequest.newBuilder(ENDPOINT)
-                .header("User-Agent", "VanishingTacos/InventoryWizard/" + platform.modVersion() + " (github.com/VanishingTacos/InventoryWizard)")
-                .header("Content-Type", "application/json")
-                .timeout(Duration.ofSeconds(10))
-                .POST(HttpRequest.BodyPublishers.ofString(body.toString()))
-                .build();
-
-        HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build()
-                .sendAsync(request, HttpResponse.BodyHandlers.discarding())
-                .thenAccept(response -> {
-                    if (response.statusCode() / 100 == 2) {
-                        InventoryWizard.LOGGER.info("Sent anonymous usage stats (turn off Usage Stats in the settings to stop)");
-                    } else {
-                        InventoryWizard.LOGGER.warn("Usage stats not accepted: HTTP {}", response.statusCode());
-                    }
-                })
-                .exceptionally(e -> {
-                    InventoryWizard.LOGGER.warn("Usage stats not sent: {}", e.toString());
-                    return null;
-                });
+        send("POST", body).thenAccept(status -> {
+            if (status / 100 == 2) {
+                InventoryWizard.LOGGER.info("Sent usage stats (turn off Usage Stats in the settings to stop and delete them)");
+            } else if (status > 0) {
+                InventoryWizard.LOGGER.warn("Usage stats not accepted: HTTP {}", status);
+            }
+        });
     }
 
     /**
-     * Tells the player once, the first time they join a world, that usage stats are on and how to turn
-     * them off. Stats start being sent from the next game start.
+     * Asks the server to delete everything stored for this install, then forgets the install id so a
+     * later opt-in starts fresh. Does nothing if stats were never sent.
      */
-    public static void notifyPlayer(Minecraft client) {
+    public static void forget() {
         InventoryWizardConfig config = InventoryWizard.config();
-        if (disabledForRun() || config.usageStatsNoticeShown || !config.usageStats || client.player == null) {
+        String installId = config.installId;
+        if (disabledForRun() || installId == null) {
             return;
         }
-        config.usageStatsNoticeShown = true;
-        config.save();
+        JsonObject body = new JsonObject();
+        body.addProperty("installId", installId);
+        send("DELETE", body).thenAccept(status -> {
+            if (status / 100 != 2) {
+                if (status > 0) {
+                    InventoryWizard.LOGGER.warn("Usage stats not deleted yet: HTTP {}; will retry at next start", status);
+                }
+                return;
+            }
+            InventoryWizard.LOGGER.info("Deleted this install's usage stats");
+            Minecraft.getInstance().execute(() -> {
+                // Unless the player opted back in meanwhile, which keeps using the same id
+                if (!config.usageStats && installId.equals(config.installId)) {
+                    config.installId = null;
+                    config.save();
+                }
+            });
+        });
+    }
 
-        Component privacy = ChatMessages.link(Component.translatable("inventorywizard.usage_stats.notice.privacy"), PRIVACY_URL);
-        ChatMessages.send(client, Component.translatable("inventorywizard.usage_stats.notice", privacy).withStyle(ChatFormatting.GRAY));
+    /** Sends {@code body} to the endpoint; completes with the HTTP status, or 0 if the request failed. */
+    private static CompletableFuture<Integer> send(String method, JsonObject body) {
+        HttpRequest request = HttpRequest.newBuilder(ENDPOINT)
+                .header("User-Agent", "VanishingTacos/InventoryWizard/" + Platform.INSTANCE.modVersion() + " (github.com/VanishingTacos/InventoryWizard)")
+                .header("Content-Type", "application/json")
+                .timeout(Duration.ofSeconds(10))
+                .method(method, HttpRequest.BodyPublishers.ofString(body.toString()))
+                .build();
+        return HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build()
+                .sendAsync(request, HttpResponse.BodyHandlers.discarding())
+                .thenApply(HttpResponse::statusCode)
+                .exceptionally(e -> {
+                    InventoryWizard.LOGGER.warn("Usage stats request failed: {}", e.toString());
+                    return 0;
+                });
+    }
+
+    // ---------- Consent ----------
+
+    /** Called for every screen; the question waits for the title screen, once per install. */
+    public static void onScreenInit(Screen screen) {
+        InventoryWizardConfig config = InventoryWizard.config();
+        if (screen instanceof TitleScreen && !config.usageStatsAsked && !disabledForRun()) {
+            // Opening a screen from inside another screen's init is fragile; do it on the next tick
+            askOnNextTick = true;
+        }
+    }
+
+    public static void onClientTick(Minecraft client, Screen current) {
+        if (!askOnNextTick) {
+            return;
+        }
+        askOnNextTick = false;
+        if (!(current instanceof TitleScreen title) || InventoryWizard.config().usageStatsAsked) {
+            return;
+        }
+        setScreen(client, new ConfirmScreen(
+                share -> {
+                    setChoice(share);
+                    setScreen(client, title);
+                },
+                Component.translatable("inventorywizard.usage_stats.consent.title"),
+                Component.translatable("inventorywizard.usage_stats.consent.message"),
+                Component.translatable("inventorywizard.usage_stats.consent.yes"),
+                Component.translatable("inventorywizard.usage_stats.consent.no")));
+    }
+
+    /** Records the player's answer from the consent screen or the settings toggle. */
+    public static void setChoice(boolean share) {
+        InventoryWizardConfig config = InventoryWizard.config();
+        boolean withdrawn = config.usageStats && !share;
+        config.usageStats = share;
+        config.usageStatsAsked = true;
+        config.save();
+        if (withdrawn) {
+            forget();
+        }
+    }
+
+    private static void setScreen(Minecraft client, Screen screen) {
+        //? if >=26.2 {
+        client.gui.setScreen(screen);
+        //?} else
+        //client.setScreen(screen);
     }
 
     private static boolean isInstallId(String value) {

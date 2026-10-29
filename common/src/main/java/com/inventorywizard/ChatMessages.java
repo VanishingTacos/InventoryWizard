@@ -9,7 +9,7 @@ import net.minecraft.network.chat.MutableComponent;
 
 import java.net.URI;
 
-/** Chat helpers shared by the update and usage stats notices. */
+/** Chat helpers for the update notice. */
 final class ChatMessages {
 
     private ChatMessages() {}

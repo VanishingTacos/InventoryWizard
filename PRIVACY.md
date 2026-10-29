@@ -2,7 +2,56 @@
 
 _Last updated: 2026-10-28_
 
-InventoryWizard does not collect personal information. This page explains the little data that does leave your computer or server, where it goes, and how to turn it off.
+InventoryWizard does not collect your name, your Minecraft account or anything you do in game. This page explains the little data that does leave your computer or server, why, where it goes, and how to turn it off or have it deleted.
+
+## Who is responsible
+
+**VanishingTacos**, the developer of InventoryWizard, is responsible for (the "controller" of) the client mod's usage stats described below.
+Contact: **[me@vanishingtacos.com](mailto:me@vanishingtacos.com)**
+
+## Client mod: usage stats (only if you agree)
+
+The client mod (Fabric, Quilt, NeoForge and Forge) can send usage stats to `api.vanishingtacos.com`, a server I run myself. They show which Minecraft versions, loaders and Java versions are worth supporting. Totals (never individual records) are shown publicly at [api.vanishingtacos.com](https://api.vanishingtacos.com).
+
+### You are asked first
+
+The first time you reach the title screen, the mod asks whether you want to share usage stats. **Nothing is sent unless you choose Share Usage Stats.** If you choose Don't Share, nothing is ever sent. You can change your mind at any time with the **Usage Stats** setting in the InventoryWizard settings screen.
+
+### What is sent
+
+Once each time the game starts, if you agreed:
+
+- **A random install ID**, created the first time stats are sent and saved in `config/inventorywizard.json`. It identifies this copy of the mod, not you or your Minecraft account.
+- **Versions:** InventoryWizard, Minecraft, your mod loader (Fabric, Quilt, NeoForge or Forge) and Java
+- **Operating system:** only Windows, macOS, Linux or Other. No version or hardware details.
+
+Because the install ID stays the same between game starts, this data is **pseudonymous**, not anonymous: it can't be linked to you by name, but it is still personal data under laws like the GDPR, and this policy treats it that way.
+
+### What is stored, and for how long
+
+- **One record per install per day:** the date, the install ID in scrambled form (a keyed hash), the versions and operating system above, and the **country** the request came from (provided by Cloudflare, see below). Records are deleted automatically after **400 days** (about 13 months).
+- **Your IP address is never stored.** It is used only in the server's memory to limit spam (at most 60 requests per hour per address) and forgotten within an hour. It is not written to disk or to logs.
+
+### What is not sent
+
+No player names, Minecraft UUIDs, server addresses, chat messages, inventory contents, world data, screenshots or lists of other mods.
+
+### Turning it off deletes your data
+
+When you turn **Usage Stats** off, the mod asks the server to **delete every record for your install ID**, then removes the ID from your config. If you are offline at the time, it tries again at each game start until the deletion goes through. You can also set `"usageStats": false` in `config/inventorywizard.json`, which deletes your data at the next game start.
+
+### Legal basis
+
+Usage stats are sent only with your **consent** (GDPR Art. 6(1)(a)). You can withdraw it at any time as described above; that does not affect what was sent before. The short, in-memory use of your IP address to protect the server from abuse is based on my **legitimate interest** in keeping the service running (Art. 6(1)(f)).
+
+### Children
+
+If you are under 16, or under the age of digital consent where you live, please ask a parent or guardian before choosing Share Usage Stats.
+
+### Service providers
+
+- **Cloudflare, Inc.** `api.vanishingtacos.com` is reached through Cloudflare, which handles each request (including your IP address) to deliver it and protect the server from attacks, and tells the server which country the request came from. Cloudflare processes this data on my behalf under its [Data Processing Addendum](https://www.cloudflare.com/cloudflare-customer-dpa/), which may involve the United States; those transfers are covered by the EU-U.S. Data Privacy Framework and Standard Contractual Clauses. See [Cloudflare's privacy policy](https://www.cloudflare.com/privacypolicy/).
+- Nobody else receives usage stats. I do not sell or share them, or use them for advertising.
 
 ## Paper/Spigot plugin: bStats
 
@@ -37,38 +86,28 @@ Then restart the server. This turns bStats off for every plugin on the server th
 
 bStats is run independently of InventoryWizard. How it stores and handles the data is covered by its own [privacy policy](https://bstats.org/privacy-policy).
 
-## Client mod: usage stats
-
-The client mod (Fabric, Quilt, NeoForge and Forge) sends anonymous usage stats to `api.vanishingtacos.com`, a server I run myself. They show which Minecraft versions, loaders and Java versions are worth supporting, and are shown publicly at [api.vanishingtacos.com](https://api.vanishingtacos.com).
-
-### What is sent
-
-Once each time the game starts:
-
-- **A random install ID**, generated the first time stats are sent and saved in `config/inventorywizard.json`. It identifies this copy of the mod, not you or your Minecraft account. Delete it from the file to get a new one.
-- **Versions:** InventoryWizard, Minecraft, your mod loader (Fabric, Quilt, NeoForge or Forge) and Java
-- **Operating system:** only Windows, macOS, Linux or Other. No version or hardware details.
-
-The server is behind Cloudflare, which tells it the **country** the request came from. Your IP address is used only briefly, in memory, to block spam. It is never stored. The install ID is stored only in a scrambled (keyed hash) form, and daily records are deleted after about 13 months.
-
-### What is not sent
-
-No player names, UUIDs, IP addresses, server addresses, chat messages, inventory contents, world data or other mods.
-
-### When it starts, and opting out
-
-Nothing is sent the first time you play. The first time you join a world, a chat message says that usage stats are on, and they start from the next game start. To turn them off, disable **Usage Stats** in the InventoryWizard settings screen, or set `"usageStats": false` in `config/inventorywizard.json`. It takes effect from the next game start.
-
 ## Client mod: update check
 
-When the game starts, it asks the [Modrinth API](https://modrinth.com) whether a newer version of InventoryWizard exists. The request includes your Minecraft version, your mod loader and InventoryWizard's version. Like any web request, it also reveals your IP address to Modrinth, under [Modrinth's privacy policy](https://modrinth.com/legal/privacy).
+When the game starts, the mod asks the [Modrinth API](https://modrinth.com) whether a newer version of InventoryWizard exists. The request includes your Minecraft version, your mod loader and InventoryWizard's version. Like any web request, it also reveals your IP address to Modrinth, which handles it under [Modrinth's privacy policy](https://modrinth.com/legal/privacy). I don't receive any of this data.
 
-To turn it off, disable **Check for Updates** in the InventoryWizard settings screen.
+To turn it off, disable **Update Check** in the InventoryWizard settings screen.
 
 ## Data stored locally
 
-The Paper plugin saves each player's sorting mode and locked slots, keyed by their Minecraft UUID, in a database inside the server's `plugins/InventoryWizard` folder. The client mod saves your settings in your `.minecraft/config` folder. This data stays on the server or computer and is never sent anywhere.
+The Paper plugin saves each player's sorting mode and locked slots, keyed by their Minecraft UUID, in a database inside the server's `plugins/InventoryWizard` folder. The client mod saves your settings in your `.minecraft/config` folder, including the usage stats install ID if you chose to share. Apart from that ID, which is sent with usage stats, this data stays on the server or computer and is never sent anywhere.
+
+## Your rights
+
+If you are in the EU, EEA or UK (GDPR), or somewhere with similar laws, you have the right to **access** the data held about you, have it **corrected** or **deleted**, **restrict** or **object** to its use, receive it in a portable format, and **withdraw your consent** at any time.
+
+The quickest way to delete your usage stats is to turn off **Usage Stats** (see above). For anything else, email **[me@vanishingtacos.com](mailto:me@vanishingtacos.com)** with your install ID (the `installId` value in `config/inventorywizard.json`). Without it I can't find your records, because by design nothing else links them to you. I'll reply within one month.
+
+You also have the right to complain to your local data protection authority.
+
+### California
+
+I do not sell or share personal information, and I don't use it for targeted advertising.
 
 ## Changes and contact
 
-If this policy changes, the update will appear in this file and in [CHANGELOG.md](CHANGELOG.md). Questions? Ask on the [Discord](https://discord.gg/6DS7N3Vmgk) or open an issue on [GitHub](https://github.com/VanishingTacos/InventoryWizard/issues).
+If this policy changes, the update will appear in this file and in [CHANGELOG.md](CHANGELOG.md). Questions or requests: **[me@vanishingtacos.com](mailto:me@vanishingtacos.com)**, the [Discord](https://discord.gg/6DS7N3Vmgk), or an issue on [GitHub](https://github.com/VanishingTacos/InventoryWizard/issues).

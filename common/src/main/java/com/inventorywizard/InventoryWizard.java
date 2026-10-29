@@ -58,16 +58,17 @@ public final class InventoryWizard {
 
     /**
      * Puts the settings back to their defaults and saves them. Locked slots and the JSON-only
-     * values (sound id, hotbar priorities, usage stats install id and notice) aren't on the
-     * settings screen, so they're kept.
+     * values (sound id, hotbar priorities) aren't on the settings screen, so they're kept. So is the
+     * usage stats choice: resetting shouldn't silently withdraw consent or ask again.
      */
     public static void resetConfig() {
         InventoryWizardConfig defaults = new InventoryWizardConfig();
         defaults.lockedSlots = config.lockedSlots;
         defaults.sound.id = config.sound.id;
         defaults.hotbarPriorities = config.hotbarPriorities;
+        defaults.usageStats = config.usageStats;
+        defaults.usageStatsAsked = config.usageStatsAsked;
         defaults.installId = config.installId;
-        defaults.usageStatsNoticeShown = config.usageStatsNoticeShown;
         config = defaults;
         config.save();
     }
@@ -100,6 +101,7 @@ public final class InventoryWizard {
         if (screen != null) {
             SortButtons.tick(client, screen);
         }
+        UsageStats.onClientTick(client, screen);
     }
 
     /**
@@ -120,7 +122,6 @@ public final class InventoryWizard {
 
     public static void onJoinWorld(Minecraft client) {
         UpdateChecker.notifyPlayer(client);
-        UsageStats.notifyPlayer(client);
     }
 
     /** Whether mouse and key input on this screen should go to {@link #onMouseClick} and {@link #onKeyPress}. */
@@ -132,6 +133,7 @@ public final class InventoryWizard {
     /** Called by each loader after a screen's init, once vanilla has added its own widgets. */
     public static void onScreenInit(Minecraft client, Screen screen) {
         CursorScroll.reset();
+        UsageStats.onScreenInit(screen);
         if (handlesScreen(screen)) {
             SortButtons.add(client, (AbstractContainerScreen<?>) screen);
         }
