@@ -64,6 +64,8 @@ dependencies {
 // Keep using the existing run/ folder at the repo root
 loom.runs.configureEach {
 	runDir = relativePath(rootProject.file('run'))
+	// Dev and test runs should not count toward the real usage stats
+	property 'inventorywizard.usageStats', 'false'
 }
 
 if (obfuscated) {

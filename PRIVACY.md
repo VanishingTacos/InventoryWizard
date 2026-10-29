@@ -1,6 +1,6 @@
 # Privacy Policy
 
-_Last updated: 2026-10-27_
+_Last updated: 2026-10-28_
 
 InventoryWizard does not collect personal information. This page explains the little data that does leave your computer or server, where it goes, and how to turn it off.
 
@@ -37,9 +37,31 @@ Then restart the server. This turns bStats off for every plugin on the server th
 
 bStats is run independently of InventoryWizard. How it stores and handles the data is covered by its own [privacy policy](https://bstats.org/privacy-policy).
 
+## Client mod: usage stats
+
+The client mod (Fabric, Quilt, NeoForge and Forge) sends anonymous usage stats to `api.vanishingtacos.com`, a server I run myself. They show which Minecraft versions, loaders and Java versions are worth supporting, and are shown publicly at [api.vanishingtacos.com](https://api.vanishingtacos.com).
+
+### What is sent
+
+Once each time the game starts:
+
+- **A random install ID**, generated the first time stats are sent and saved in `config/inventorywizard.json`. It identifies this copy of the mod, not you or your Minecraft account. Delete it from the file to get a new one.
+- **Versions:** InventoryWizard, Minecraft, your mod loader (Fabric, Quilt, NeoForge or Forge) and Java
+- **Operating system:** only Windows, macOS, Linux or Other. No version or hardware details.
+
+The server is behind Cloudflare, which tells it the **country** the request came from. Your IP address is used only briefly, in memory, to block spam. It is never stored. The install ID is stored only in a scrambled (keyed hash) form, and daily records are deleted after about 13 months.
+
+### What is not sent
+
+No player names, UUIDs, IP addresses, server addresses, chat messages, inventory contents, world data or other mods.
+
+### When it starts, and opting out
+
+Nothing is sent the first time you play. The first time you join a world, a chat message says that usage stats are on, and they start from the next game start. To turn them off, disable **Usage Stats** in the InventoryWizard settings screen, or set `"usageStats": false` in `config/inventorywizard.json`. It takes effect from the next game start.
+
 ## Client mod: update check
 
-The client mod (Fabric, Quilt, NeoForge and Forge) collects no statistics. When the game starts, it asks the [Modrinth API](https://modrinth.com) whether a newer version of InventoryWizard exists. The request includes your Minecraft version, your mod loader and InventoryWizard's version. Like any web request, it also reveals your IP address to Modrinth, under [Modrinth's privacy policy](https://modrinth.com/legal/privacy).
+When the game starts, it asks the [Modrinth API](https://modrinth.com) whether a newer version of InventoryWizard exists. The request includes your Minecraft version, your mod loader and InventoryWizard's version. Like any web request, it also reveals your IP address to Modrinth, under [Modrinth's privacy policy](https://modrinth.com/legal/privacy).
 
 To turn it off, disable **Check for Updates** in the InventoryWizard settings screen.
 

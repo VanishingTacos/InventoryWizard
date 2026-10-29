@@ -42,6 +42,11 @@ public class FabricPlatform implements Platform {
         return List.of("fabric", "quilt");
     }
 
+    @Override
+    public String loaderName() {
+        return Platform.classExists("org.quiltmc.loader.api.QuiltLoader") ? "quilt" : "fabric";
+    }
+
     //? if >=1.21.9 {
     @Override
     public KeyMapping.Category keyMappingCategory(Identifier id) {

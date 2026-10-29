@@ -46,6 +46,13 @@ public class InventoryWizardConfig {
     /** Look up the newest release on Modrinth at startup and mention it in chat. */
     public boolean checkForUpdates = true;
 
+    /** Send anonymous usage stats at startup; see {@link UsageStats} and PRIVACY.md. */
+    public boolean usageStats = true;
+    /** Random id sent with usage stats, made the first time they're sent. Identifies this install, not the player. */
+    public String installId;
+    /** Whether the one-time usage stats chat notice has been shown. Nothing is sent before it has. */
+    public boolean usageStatsNoticeShown;
+
     public static class Sound {
         public String id = "minecraft:ui.button.click";
         public float volume = 0.5f;

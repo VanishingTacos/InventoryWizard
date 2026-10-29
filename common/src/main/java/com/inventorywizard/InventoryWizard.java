@@ -58,13 +58,16 @@ public final class InventoryWizard {
 
     /**
      * Puts the settings back to their defaults and saves them. Locked slots and the JSON-only
-     * values (sound id, hotbar priorities) aren't on the settings screen, so they're kept.
+     * values (sound id, hotbar priorities, usage stats install id and notice) aren't on the
+     * settings screen, so they're kept.
      */
     public static void resetConfig() {
         InventoryWizardConfig defaults = new InventoryWizardConfig();
         defaults.lockedSlots = config.lockedSlots;
         defaults.sound.id = config.sound.id;
         defaults.hotbarPriorities = config.hotbarPriorities;
+        defaults.installId = config.installId;
+        defaults.usageStatsNoticeShown = config.usageStatsNoticeShown;
         config = defaults;
         config.save();
     }
@@ -74,6 +77,7 @@ public final class InventoryWizard {
         if (config.checkForUpdates) {
             UpdateChecker.start();
         }
+        UsageStats.start();
         LOGGER.info("InventoryWizard has awakened! Sort key, Shift+Right-click or /iwiz [hotbar|inventory|all|mode]; Alt+click locks a slot");
     }
 
@@ -116,6 +120,7 @@ public final class InventoryWizard {
 
     public static void onJoinWorld(Minecraft client) {
         UpdateChecker.notifyPlayer(client);
+        UsageStats.notifyPlayer(client);
     }
 
     /** Whether mouse and key input on this screen should go to {@link #onMouseClick} and {@link #onKeyPress}. */

@@ -50,7 +50,7 @@ Everything else lives in the **[Wiki](https://github.com/VanishingTacos/Inventor
 - [Building from Source & Contributing](https://github.com/VanishingTacos/InventoryWizard/wiki/Building-from-Source)
 
 ## 🔒 Privacy
-The Paper plugin sends anonymous usage statistics to [bStats](https://bstats.org/plugin/bukkit/InventoryWizard/34984). Server owners can opt out in `plugins/bStats/config.yml`. See [PRIVACY.md](PRIVACY.md) for what is collected.
+The Paper plugin sends anonymous usage statistics to [bStats](https://bstats.org/plugin/bukkit/InventoryWizard/34984). Server owners can opt out in `plugins/bStats/config.yml`. The client mod sends anonymous usage stats (a random install ID plus mod, Minecraft, loader, Java and OS versions) once per game start, after telling you in chat; turn off **Usage Stats** in its settings to opt out. See [PRIVACY.md](PRIVACY.md) for what is collected.
 
 ## 📄 License
 MIT - see [LICENSE](LICENSE).

@@ -7,9 +7,7 @@ import com.google.gson.JsonParser;
 import com.inventorywizard.platform.Platform;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
-import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.HoverEvent;
 
 import java.net.URI;
 import java.net.URLEncoder;
@@ -101,22 +99,9 @@ public final class UpdateChecker {
         }
         notified = true;
 
-        Component link = Component.translatable("inventorywizard.update.download")
-                .withStyle(style -> style
-                        .withColor(ChatFormatting.AQUA)
-                        .withUnderlined(true)
-                        //? if >=1.21.5 {
-                        .withClickEvent(new ClickEvent.OpenUrl(update.page()))
-                        .withHoverEvent(new HoverEvent.ShowText(Component.literal(update.page().toString()))));
-                        //?} else {
-                        /*.withClickEvent(new ClickEvent(ClickEvent.Action.OPEN_URL, update.page().toString()))
-                        .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Component.literal(update.page().toString()))));
-                        *///?}
+        Component link = ChatMessages.link(Component.translatable("inventorywizard.update.download"), update.page());
         Component message = Component.translatable("inventorywizard.update.available", update.version(), link).withStyle(ChatFormatting.GOLD);
-        //? if >=26.1 {
-        client.player.sendSystemMessage(message);
-        //?} else
-        //client.player.displayClientMessage(message, false);
+        ChatMessages.send(client, message);
     }
 
     /**
