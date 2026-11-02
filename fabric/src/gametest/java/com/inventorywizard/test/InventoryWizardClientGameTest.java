@@ -114,6 +114,7 @@ public class InventoryWizardClientGameTest implements FabricClientGameTest {
             testBlockContainer(context, server, Blocks.BARREL, new BlockPos(0, 0, 2), ContainerScreen.class, Input.SHIFT_RIGHT_CLICK, "barrel");
             testBlockContainer(context, server, Blocks.SHULKER_BOX, new BlockPos(0, 0, -2), ShulkerBoxScreen.class, Input.SORT_KEY_HOVER, "shulker_box");
             testEnderChest(context, server);
+            testItemCategories(context, server);
             testDisabledFeature(context, server);
             testInventoryButtons(context, server);
             testBlockContainer(context, server, Blocks.CHEST, new BlockPos(0, 0, 3), ContainerScreen.class, Input.SORT_BUTTON, "chest-button");
@@ -420,6 +421,25 @@ public class InventoryWizardClientGameTest implements FabricClientGameTest {
 
         List<String> items = server.computeOnServer(s -> describe(player(s).getEnderChestInventory()));
         assertSortedScrambled("ender_chest", items);
+        closeScreen(context);
+    }
+
+    /** Crops, redstone parts and decorations are blocks too, but sort into their own categories. */
+    private static void testItemCategories(ClientGameTestContext context, TestServerContext server) {
+        server.runOnServer(s -> {
+            ServerPlayer player = player(s);
+            fillCategories(player.getEnderChestInventory());
+            player.openMenu(new SimpleMenuProvider(
+                    (id, inventory, p) -> ChestMenu.threeRows(id, inventory, p.getEnderChestInventory()),
+                    Component.literal("Ender Chest")));
+        });
+        context.waitForScreen(ContainerScreen.class);
+
+        sortOpenContainer(context, Input.SORT_KEY_NO_HOVER);
+        pace(context);
+
+        List<String> items = server.computeOnServer(s -> describe(player(s).getEnderChestInventory()));
+        assertSortedCategories(items);
         closeScreen(context);
     }
 
@@ -778,6 +798,23 @@ public class InventoryWizardClientGameTest implements FabricClientGameTest {
     private static void assertSortedScrambled(String name, List<String> items) {
         assertPrefix(name, items, "stone x7", "dirt x10", "oak_log x3", "diamond_sword x1", "bread x2");
         assertEmptyFrom(name, items, 5);
+    }
+
+    private static void fillCategories(Container container) {
+        container.clearContent();
+        container.setItem(0, new ItemStack(Items.LANTERN, 5));
+        container.setItem(4, new ItemStack(Items.REPEATER, 2));
+        container.setItem(7, new ItemStack(Items.CARROT, 3));
+        container.setItem(11, new ItemStack(Items.DIAMOND_PICKAXE));
+        container.setItem(16, new ItemStack(Items.GLASS, 4));
+        container.setItem(23, new ItemStack(Items.COBBLESTONE, 8));
+    }
+
+    /** Stone, other blocks, tools, food, redstone, decoration; all but the pickaxe are block items. */
+    private static void assertSortedCategories(List<String> items) {
+        assertPrefix("item categories", items,
+                "cobblestone x8", "glass x4", "diamond_pickaxe x1", "carrot x3", "repeater x2", "lantern x5");
+        assertEmptyFrom("item categories", items, 6);
     }
 
     private static String describe(ItemStack stack) {

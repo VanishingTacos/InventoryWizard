@@ -253,7 +253,10 @@ public final class InventoryWizard {
                 }));
 
         var node = dispatcher.register(root);
-        dispatcher.register(InventoryWizard.<S>literal("inventorywizard").redirect(node));
+        // A redirect only applies when arguments follow, so the bare alias needs its own executes
+        dispatcher.register(InventoryWizard.<S>literal("inventorywizard")
+                .executes(context -> sort(SortActions.PlayerTarget.INVENTORY))
+                .redirect(node));
     }
 
     private static <S> LiteralArgumentBuilder<S> literal(String name) {

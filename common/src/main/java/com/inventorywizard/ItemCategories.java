@@ -40,7 +40,8 @@ final class ItemCategories {
         if (isStone(stack)) return 100;
         if (isEarth(stack)) return 200;
         if (isWood(stack)) return 300;
-        if (isBlock(stack)) return 500;
+        // Crops, redstone parts and decorations are blocks too; leave them for their own categories below
+        if (isBlock(stack) && !isFood(stack) && !isRedstone(stack) && !isDecoration(stack)) return 500;
         if (isTool(stack)) return 600;
         if (isWeapon(stack)) return 700;
         if (isArmor(stack)) return 800;

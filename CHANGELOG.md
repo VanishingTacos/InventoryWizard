@@ -6,6 +6,14 @@ All notable changes to InventoryWizard. The release workflow copies the section 
 Add changes under **Unreleased** as you make them. When you bump the version, rename that heading to
 `## [x.y.z] - YYYY-MM-DD` and start a new empty **Unreleased** section above it.
 
+## Unreleased
+
+### Fixed
+- `/inventorywizard` on its own now sorts your inventory like `/iwiz`; before, only `/inventorywizard <subcommand>` worked.
+- **Default sort:** redstone parts (repeaters, comparators, pistons, hoppers, levers, buttons, doors, rails) and decorations (carpets, banners, candles, lanterns, flowers, heads) now get their own categories instead of being lumped in with other blocks. In the client mod, crops you can eat (carrots, potatoes, berries) now sort with food.
+- **Paper:** waxed copper blocks are no longer sorted as tools.
+- A settings file that can't be read (for example after a typo while editing it by hand) is now kept as `inventorywizard.json.bak` before the defaults replace it, so your settings aren't lost.
+
 ## [2.3.3] - 2026-10-29
 
 ### Added

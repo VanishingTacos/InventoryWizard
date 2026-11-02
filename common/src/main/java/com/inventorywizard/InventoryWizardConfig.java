@@ -10,6 +10,7 @@ import java.io.Reader;
 import java.io.Writer;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.Set;
 import java.util.TreeSet;
 
@@ -84,6 +85,7 @@ public class InventoryWizardConfig {
                 config = GSON.fromJson(reader, InventoryWizardConfig.class);
             } catch (IOException | JsonParseException e) {
                 InventoryWizard.LOGGER.warn("Could not read {}, using defaults", PATH, e);
+                backUpUnreadable();
             }
         }
         if (config == null) {
@@ -92,6 +94,17 @@ public class InventoryWizardConfig {
         config.fillMissing();
         config.save();
         return config;
+    }
+
+    /** Keeps a file that failed to load, since saving the defaults overwrites it; a typo shouldn't lose every setting. */
+    private static void backUpUnreadable() {
+        Path backup = PATH.resolveSibling(PATH.getFileName() + ".bak");
+        try {
+            Files.copy(PATH, backup, StandardCopyOption.REPLACE_EXISTING);
+            InventoryWizard.LOGGER.warn("Kept the unreadable settings as {}", backup);
+        } catch (IOException e) {
+            InventoryWizard.LOGGER.warn("Could not back up {}", PATH, e);
+        }
     }
 
     public void save() {
