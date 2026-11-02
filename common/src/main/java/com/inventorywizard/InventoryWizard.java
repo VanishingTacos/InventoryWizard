@@ -58,13 +58,17 @@ public final class InventoryWizard {
 
     /**
      * Puts the settings back to their defaults and saves them. Locked slots and the JSON-only
-     * values (sound id, hotbar priorities) aren't on the settings screen, so they're kept.
+     * values (sound id, hotbar priorities) aren't on the settings screen, so they're kept. So is the
+     * usage stats choice: resetting shouldn't silently withdraw consent or ask again.
      */
     public static void resetConfig() {
         InventoryWizardConfig defaults = new InventoryWizardConfig();
         defaults.lockedSlots = config.lockedSlots;
         defaults.sound.id = config.sound.id;
         defaults.hotbarPriorities = config.hotbarPriorities;
+        defaults.usageStats = config.usageStats;
+        defaults.usageStatsAsked = config.usageStatsAsked;
+        defaults.installId = config.installId;
         config = defaults;
         config.save();
     }
@@ -74,6 +78,7 @@ public final class InventoryWizard {
         if (config.checkForUpdates) {
             UpdateChecker.start();
         }
+        UsageStats.start();
         LOGGER.info("InventoryWizard has awakened! Sort key, Shift+Right-click or /iwiz [hotbar|inventory|all|mode]; Alt+click locks a slot");
     }
 
@@ -96,6 +101,7 @@ public final class InventoryWizard {
         if (screen != null) {
             SortButtons.tick(client, screen);
         }
+        UsageStats.onClientTick(client, screen);
     }
 
     /**
@@ -127,6 +133,7 @@ public final class InventoryWizard {
     /** Called by each loader after a screen's init, once vanilla has added its own widgets. */
     public static void onScreenInit(Minecraft client, Screen screen) {
         CursorScroll.reset();
+        UsageStats.onScreenInit(screen);
         if (handlesScreen(screen)) {
             SortButtons.add(client, (AbstractContainerScreen<?>) screen);
         }
@@ -246,7 +253,10 @@ public final class InventoryWizard {
                 }));
 
         var node = dispatcher.register(root);
-        dispatcher.register(InventoryWizard.<S>literal("inventorywizard").redirect(node));
+        // A redirect only applies when arguments follow, so the bare alias needs its own executes
+        dispatcher.register(InventoryWizard.<S>literal("inventorywizard")
+                .executes(context -> sort(SortActions.PlayerTarget.INVENTORY))
+                .redirect(node));
     }
 
     private static <S> LiteralArgumentBuilder<S> literal(String name) {

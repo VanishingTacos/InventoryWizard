@@ -10,6 +10,7 @@ import java.io.Reader;
 import java.io.Writer;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.Set;
 import java.util.TreeSet;
 
@@ -46,6 +47,13 @@ public class InventoryWizardConfig {
     /** Look up the newest release on Modrinth at startup and mention it in chat. */
     public boolean checkForUpdates = true;
 
+    /** Send pseudonymous usage stats at startup; see {@link UsageStats} and PRIVACY.md. Off until the player agrees. */
+    public boolean usageStats = false;
+    /** Random id sent with usage stats, made the first time they're sent. Identifies this install, not the player. */
+    public String installId;
+    /** Whether the player has answered the one-time usage stats question (or set it in the settings). */
+    public boolean usageStatsAsked;
+
     public static class Sound {
         public String id = "minecraft:ui.button.click";
         public float volume = 0.5f;
@@ -77,6 +85,7 @@ public class InventoryWizardConfig {
                 config = GSON.fromJson(reader, InventoryWizardConfig.class);
             } catch (IOException | JsonParseException e) {
                 InventoryWizard.LOGGER.warn("Could not read {}, using defaults", PATH, e);
+                backUpUnreadable();
             }
         }
         if (config == null) {
@@ -85,6 +94,17 @@ public class InventoryWizardConfig {
         config.fillMissing();
         config.save();
         return config;
+    }
+
+    /** Keeps a file that failed to load, since saving the defaults overwrites it; a typo shouldn't lose every setting. */
+    private static void backUpUnreadable() {
+        Path backup = PATH.resolveSibling(PATH.getFileName() + ".bak");
+        try {
+            Files.copy(PATH, backup, StandardCopyOption.REPLACE_EXISTING);
+            InventoryWizard.LOGGER.warn("Kept the unreadable settings as {}", backup);
+        } catch (IOException e) {
+            InventoryWizard.LOGGER.warn("Could not back up {}", PATH, e);
+        }
     }
 
     public void save() {

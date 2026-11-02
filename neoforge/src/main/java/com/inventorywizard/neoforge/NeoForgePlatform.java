@@ -39,6 +39,11 @@ public class NeoForgePlatform implements Platform {
         return List.of("neoforge");
     }
 
+    @Override
+    public String loaderName() {
+        return "neoforge";
+    }
+
     //? if >=1.21.9 {
     /** Registered with {@code RegisterKeyMappingsEvent} in {@link InventoryWizardNeoForge}. */
     @Override

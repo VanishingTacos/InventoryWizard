@@ -149,13 +149,17 @@ public class InventoryWizardConfigScreen extends OptionsSubScreen {
         AbstractWidget checkForUpdates = bool("check_for_updates", config.checkForUpdates, v -> config.checkForUpdates = v)
                 .createButton(options);
         WidgetIcon.set(checkForUpdates, Items.CLOCK);
+        // Choosing here also answers the first-launch question; turning it off deletes the data on the server
+        AbstractWidget usageStats = bool("usage_stats", config.usageStats, UsageStats::setChoice).createButton(options);
+        WidgetIcon.set(usageStats, Items.SPYGLASS);
+        list.addSmall(checkForUpdates, usageStats);
         Button keyBinds = Button.builder(Component.translatable("controls.keybinds"),
                         b -> open(new KeyBindsScreen(this, options)))
                 .tooltip(Tooltip.create(Component.translatable("inventorywizard.config.keybinds.tooltip")))
-                .width(150)
+                .width(ROW_WIDTH)
                 .build();
         WidgetIcon.set(keyBinds, Items.LEVER);
-        list.addSmall(checkForUpdates, keyBinds);
+        list.addSmall(keyBinds, null);
         unlockSlots = Button.builder(unlockSlotsLabel(), b -> {
                     config.lockedSlots.clear();
                     b.setMessage(unlockSlotsLabel());

@@ -39,6 +39,11 @@ public class ForgePlatform implements Platform {
         return List.of("forge");
     }
 
+    @Override
+    public String loaderName() {
+        return "forge";
+    }
+
     //? if >=1.21.9 {
     /** Forge has no category event; the vanilla registry is how it is done there. */
     @Override

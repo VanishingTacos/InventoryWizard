@@ -16,6 +16,8 @@ minecraft {
 			workingDir = rootProject.layout.projectDirectory.dir('run/forge')
 			// Forge only picks up mixin configs from the jar manifest, which dev runs don't have
 			args "--mixin.config=${project.mod_id}.mixins.json"
+			// Dev and test runs should not count toward the real usage stats
+			systemProperty 'inventorywizard.usageStats', 'false'
 		}
 
 		register('client') {

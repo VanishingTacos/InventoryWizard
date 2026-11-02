@@ -225,6 +225,20 @@ public class InventoryWizardTestPlugin extends JavaPlugin implements Listener {
                     Material.IRON_SWORD, Material.BOWL));
         });
 
+        test("redstone and decoration blocks get their own categories, waxed copper isn't a tool", () -> {
+            Inventory inventory = placeContainer(world, 20, Material.CHEST);
+            inventory.setItem(0, new ItemStack(Material.LANTERN, 5));
+            inventory.setItem(1, new ItemStack(Material.REPEATER, 2));
+            inventory.setItem(2, new ItemStack(Material.WAXED_CUT_COPPER, 4));
+            inventory.setItem(3, new ItemStack(Material.DIAMOND_PICKAXE));
+            inventory.setItem(4, new ItemStack(Material.GLASS, 4));
+            InventorySorter.sortInventory(inventory, SortMode.DEFAULT);
+            List<Material> order = contents(inventory).stream().map(ItemStack::getType).toList();
+            // blocks 500, tools 600, redstone 1000, decoration 1200
+            return order.equals(List.of(Material.GLASS, Material.WAXED_CUT_COPPER, Material.DIAMOND_PICKAXE,
+                    Material.REPEATER, Material.LANTERN));
+        });
+
         test("sorted chest persists in the world", () -> {
             placeContainer(world, 12, Material.CHEST);
             Inventory inventory = ((Container) world.getBlockAt(12, 100, 0).getState()).getInventory();

@@ -220,7 +220,8 @@ public class InventorySorter {
         if (isStoneType(material)) return 100;
         if (isEarthType(material)) return 200;
         if (isWoodType(material)) return 300;
-        if (material.isBlock()) return 500;
+        // Redstone parts and decorations are blocks too; leave them for their own categories below
+        if (material.isBlock() && !isRedstoneType(material) && !isDecorationType(material)) return 500;
         if (isToolType(material)) return 600;
         if (isWeaponType(material)) return 700;
         if (isArmorType(material)) return 800;
@@ -268,11 +269,12 @@ public class InventorySorter {
                 name.contains("REDSTONE") || name.contains("LAPIS") || name.contains("NETHERITE")));
     }
 
+    // Suffixes, since "AXE" alone would also match WAXED_ copper blocks
     private static boolean isToolType(Material material) {
         String name = material.name();
-        return name.contains("PICKAXE") || name.contains("AXE") || name.contains("SHOVEL") ||
-               name.contains("HOE") || name.contains("SHEARS") || name.contains("FLINT_AND_STEEL") ||
-               name.contains("FISHING_ROD") || name.contains("COMPASS") || name.contains("CLOCK");
+        return name.endsWith("_PICKAXE") || name.endsWith("_AXE") || name.endsWith("_SHOVEL") ||
+               name.endsWith("_HOE") || name.equals("SHEARS") || name.equals("FLINT_AND_STEEL") ||
+               name.equals("FISHING_ROD") || name.contains("COMPASS") || name.equals("CLOCK");
     }
 
     // Exact names, since "BOW" alone would also match BOWL

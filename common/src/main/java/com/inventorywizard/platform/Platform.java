@@ -35,6 +35,9 @@ public interface Platform {
     /** Modrinth loader tags whose builds run on this loader, used by the update check. */
     List<String> modrinthLoaders();
 
+    /** The loader actually running, for usage stats: {@code fabric}, {@code quilt}, {@code neoforge} or {@code forge}. */
+    String loaderName();
+
     /** Creates the key mapping category in whatever way this loader wants it registered. */
     //? if >=1.21.9
     KeyMapping.Category keyMappingCategory(Identifier id);
