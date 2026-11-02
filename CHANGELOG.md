@@ -6,7 +6,7 @@ All notable changes to InventoryWizard. The release workflow copies the section 
 Add changes under **Unreleased** as you make them. When you bump the version, rename that heading to
 `## [x.y.z] - YYYY-MM-DD` and start a new empty **Unreleased** section above it.
 
-## Unreleased
+## [2.3.4] - 2026-10-29
 
 ### Fixed
 - `/inventorywizard` on its own now sorts your inventory like `/iwiz`; before, only `/inventorywizard <subcommand>` worked.
