@@ -1,3 +1,6 @@
+# ⚠️THIS REPO IS NOW HOSTED [HERE](https://git.vanishingtacos.com/VanishingTacos/InventoryWizard)⚠️
+
+
 # 🧙‍♂️ InventoryWizard
 
 **One-click inventory sorting for Minecraft.** ✨
